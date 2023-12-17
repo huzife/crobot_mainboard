@@ -1,0 +1,3 @@
+config BOARD_STM32F405_CROBOT
+    bool "select board STM32F405"
+    depends on SOC_STM32F405RGT6

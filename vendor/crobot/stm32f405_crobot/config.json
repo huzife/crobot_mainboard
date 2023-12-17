@@ -1,0 +1,21 @@
+{
+    "product_name": "stm32f405_crobot",
+    "type": "mini",
+    "version": "3.0",
+    "device_company": "crobot",
+    "board": "stm32f405_crobot",
+    "kernel_type": "liteos_m",
+    "kernel_version": "",
+    "subsystems": [
+        {
+            "subsystem": "kernel",
+            "components": [
+                {
+                    "component": "liteos_m"
+                }
+            ]
+        }
+    ],
+    "product_adapter_dir": "",
+    "third_party_dir": "//third_party"
+}

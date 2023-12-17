@@ -1,0 +1,3 @@
+if SOC_STM32F405RGT6
+    orsource "stm32f405_crobot/Kconfig.liteos_m.board"
+endif
