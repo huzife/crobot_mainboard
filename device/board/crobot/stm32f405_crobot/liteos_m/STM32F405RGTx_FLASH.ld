@@ -51,7 +51,8 @@
 
 /* Entry Point */
 ENTRY(Reset_Handler)
-
+/* Lowest address of the user mode stack */
+_sstack = 0x20000000;    /* start of RAM */
 /* Highest address of the user mode stack */
 _estack = ORIGIN(RAM) + LENGTH(RAM);    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
@@ -80,6 +81,7 @@ SECTIONS
   /* The program code and other data goes into FLASH */
   .text :
   {
+    _stext = .;
     . = ALIGN(4);
     *(.text)           /* .text sections (code) */
     *(.text*)          /* .text* sections (code) */

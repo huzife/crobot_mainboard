@@ -158,9 +158,7 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 void task_sample_entry_1(void) {
   while (1) {
-    char str[16] = {0};
-    itoa(SystemCoreClock, str, 10);
-    HAL_UART_Transmit(&huart1, str, strlen(str), 1000);
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
     (void)LOS_TaskDelay(1000); /* 2000 millisecond */
   }
 }
@@ -188,14 +186,14 @@ void task_sample(void)
         printf("Task1 create failed\n");
     }
 
-    // stTask.pfnTaskEntry = (TSK_ENTRY_FUNC)task_sample_entry_2;
-    // stTask.uwStackSize = 0x1000;
-    // stTask.pcName = "task_sample_entry_2";
-    // stTask.usTaskPrio = 7; /* Os task priority is 7 */
-    // uwRet = LOS_TaskCreate(&taskID2, &stTask);
-    // if (uwRet != LOS_OK) {
-    //     printf("Task2 create failed\n");
-    // }
+    stTask.pfnTaskEntry = (TSK_ENTRY_FUNC)task_sample_entry_2;
+    stTask.uwStackSize = 0x1000;
+    stTask.pcName = "task_sample_entry_2";
+    stTask.usTaskPrio = 7; /* Os task priority is 7 */
+    uwRet = LOS_TaskCreate(&taskID2, &stTask);
+    if (uwRet != LOS_OK) {
+        printf("Task2 create failed\n");
+    }
 }
 
 /* USER CODE END 4 */
