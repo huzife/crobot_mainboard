@@ -3,16 +3,24 @@ module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
     sources = [
         "startup_stm32f405xx.s",
-        "Src/dprintf.c",
-        "Src/gpio.c",
-        "Src/main.c",
-        "Src/stm32f4xx_hal_msp.c",
-        "Src/stm32f4xx_it.c",
-        "Src/system_stm32f4xx.c",
-        "Src/usart.c"
+        "src/core/dma.c",
+        "src/core/dprintf.c",
+        "src/core/gpio.c",
+        "src/core/i2c.c",
+        "src/core/main.c",
+        "src/core/stm32f4xx_hal_msp.c",
+        "src/core/stm32f4xx_it.c",
+        "src/core/system_stm32f4xx.c",
+        "src/core/usart.c",
+        "src/user/data_com.c",
+        "src/user/icm42605.c",
+        "src/user/os_task.c",
+        "src/user/s_queue.c",
+        "src/user/share_ware.c",
     ]
     include_dirs = [
-        "Inc"
+        "include/core",
+        "include/user"
     ]
 }
 

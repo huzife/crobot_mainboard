@@ -6,26 +6,28 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
+  * <h2><center>&copy; Copyright (c) 2023 STMicroelectronics.
+  * All rights reserved.</center></h2>
   *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
+  * This software component is licensed by ST under BSD 3-Clause license,
+  * the "License"; You may not use this file except in compliance with the
+  * License. You may obtain a copy of the License at:
+  *                        opensource.org/licenses/BSD-3-Clause
   *
   ******************************************************************************
   */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "dma.h"
+#include "i2c.h"
 #include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "los_task.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include "share_ware.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -35,7 +37,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -52,7 +53,7 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void task_sample(void);
+void os_run(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -88,21 +89,17 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART1_UART_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  uint32_t ret = LOS_KernelInit();
-  if (ret == LOS_OK) {
-    task_sample();
-    LOS_Start();
-  }
+  os_run();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    printf("test\n");
-    HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -156,45 +153,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void task_sample_entry_1(void) {
-  while (1) {
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
-    (void)LOS_TaskDelay(1000); /* 2000 millisecond */
-  }
-}
-
-void task_sample_entry_2(void) {
-  while (1) {
-    printf("Task Sample 2 running...\n");
-    (void)LOS_TaskDelay(2000); /* 2000 millisecond */
-  }
-}
-
-void task_sample(void)
-{
-    uint32_t uwRet;
-    uint32_t taskID1;
-    uint32_t taskID2;
-    TSK_INIT_PARAM_S stTask = {0};
-
-    stTask.pfnTaskEntry = (TSK_ENTRY_FUNC)task_sample_entry_1;
-    stTask.uwStackSize = 0x1000;
-    stTask.pcName = "task_sample_entry_1";
-    stTask.usTaskPrio = 6; /* Os task priority is 6 */
-    uwRet = LOS_TaskCreate(&taskID1, &stTask);
-    if (uwRet != LOS_OK) {
-        printf("Task1 create failed\n");
-    }
-
-    stTask.pfnTaskEntry = (TSK_ENTRY_FUNC)task_sample_entry_2;
-    stTask.uwStackSize = 0x1000;
-    stTask.pcName = "task_sample_entry_2";
-    stTask.usTaskPrio = 7; /* Os task priority is 7 */
-    uwRet = LOS_TaskCreate(&taskID2, &stTask);
-    if (uwRet != LOS_OK) {
-        printf("Task2 create failed\n");
-    }
-}
 
 /* USER CODE END 4 */
 
