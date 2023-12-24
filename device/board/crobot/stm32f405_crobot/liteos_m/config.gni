@@ -40,7 +40,10 @@ board_cflags = [
     "-Wall",
     "-fdata-sections",
     "-ffunction-sections",
+    "-fno-omit-frame-pointer",
+    "-DUSE_HAL_DRIVER",
     "-DSTM32F405xx",
+    "-DICM42605_USE_HARD_I2C"
 ]
 board_cflags += board_opt_flags
 
@@ -62,6 +65,11 @@ board_ld_flags = [
     "-Wl,--wrap=_free_r",
     "-Wl,--wrap=_memalign_r",
     "-Wl,--wrap=_malloc_usable_size_r",
+    "-Wl,--wrap=printf",
+    "-Wl,--wrap=sprintf",
+    "-Wl,--wrap=snprintf",
+    "-Wl,--wrap=vsnprintf",
+    "-Wl,--wrap=vprintf",
 ]
 board_ld_flags += board_opt_flags
 
