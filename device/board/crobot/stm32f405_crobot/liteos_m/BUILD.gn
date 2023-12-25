@@ -12,9 +12,9 @@ kernel_module(module_name) {
         "src/core/stm32f4xx_it.c",
         "src/core/system_stm32f4xx.c",
         "src/core/usart.c",
+        "src/user/crobot_tasks.c",
         "src/user/data_com.c",
         "src/user/icm42605.c",
-        "src/user/os_task.c",
         "src/user/s_queue.c",
         "src/user/share_ware.c",
     ]

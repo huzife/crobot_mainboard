@@ -88,8 +88,7 @@ void parse(Data_Parser *parser, uint8_t data) {
  *  返 回 值：None
  */
 void process_data(uint8_t *buf) {
-    Function_Code code = (Function_Code)buf[3];
-    switch (code) {
+    switch ((Function_Code)buf[3]) {
         case NONE: break;
 
         case GET_SPEED: break;
@@ -109,7 +108,6 @@ void process_data(uint8_t *buf) {
             com_tx_data[3] = 0x03;
             com_tx_data[8] = check_sum((uint8_t*)com_tx_data, 8);
 
-            HAL_UART_Transmit_DMA(&huart1, (uint8_t*)com_tx_data, 9);
             break;
         }
 
@@ -151,8 +149,9 @@ void process_data(uint8_t *buf) {
             com_tx_data[3] = 0x04;
             com_tx_data[28] = check_sum((uint8_t*)com_tx_data, 28);
 
-            HAL_UART_Transmit_DMA(&huart1, (uint8_t*)com_tx_data, 29);
             break;
         }
     }
+
+    HAL_UART_Transmit_DMA(&huart1, (uint8_t*)com_tx_data, com_tx_data[2] + 4);
 }

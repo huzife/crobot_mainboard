@@ -69,6 +69,9 @@ extern unsigned int __los_heap_addr_end__;
 
 #define LOSCFG_BASE_CORE_SCHED_SLEEP                        1
 
+#define LOSCFG_BACKTRACE_TYPE                               1
+#define LOSCFG_BACKTRACE_DEPTH                              15
+
 // #define LOSCFG_SYS_HEAP_SIZE                                0x7000UL
 
 // #define LOSCFG_KERNEL_PM                                    0
