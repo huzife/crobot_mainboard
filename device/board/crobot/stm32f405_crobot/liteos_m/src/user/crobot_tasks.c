@@ -49,19 +49,17 @@ void imu_task(void) {
 void gpio_test_task(void) {
     printf("gpio_test_task\n");
     for (;;) {
-        // uint8_t cnt = 0;
-        // if (!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3))
-        //     ++cnt;
-        // if (!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4))
-        //     ++cnt;
-        // if (!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5))
-        //     ++cnt;
+        uint8_t cnt = 0;
+        if (!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3))
+            ++cnt;
+        if (!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4))
+            ++cnt;
+        if (!HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5))
+            ++cnt;
 
-        // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !(cnt % 2));
-        // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, cnt < 2);
-        // task_delay(10);
-        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
-        task_delay(200);
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, !(cnt % 2));
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, cnt < 2);
+        task_delay(10);
     }
 }
 
@@ -88,13 +86,23 @@ void start_tasks(void) {
     uint32_t imu_task_id;
     uint32_t gpio_test_task_id;
 
+    // kernel init
     LOS_KernelInit();
 
+    // lock the task scheduling
     LOS_TaskLock();
-    create_task(&communication_task_id, communication_task, "communication_task", 5, 4096);
-    create_task(&imu_task_id, imu_task, "imu_task", 5, 4096);
-    create_task(&gpio_test_task_id, gpio_test_task, "gpio_test_task", 6, 1024);
+
+    // create tasks
+    create_task(&communication_task_id, (TSK_ENTRY_FUNC)communication_task,
+                "communication_task", 5, 4096);
+    create_task(&imu_task_id, (TSK_ENTRY_FUNC)imu_task,
+                "imu_task", 5, 4096);
+    create_task(&gpio_test_task_id, (TSK_ENTRY_FUNC)gpio_test_task,
+                "gpio_test_task", 6, 1024);
+
+    // unlock the task scheduling
     LOS_TaskUnlock();
 
+    // start scheduling
     LOS_Start();
 }

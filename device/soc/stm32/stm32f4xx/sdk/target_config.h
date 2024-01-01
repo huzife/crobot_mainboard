@@ -4,11 +4,6 @@
 #include "stm32f4xx.h"
 
 // memory allocation macro
-extern unsigned int __los_heap_addr_start__;
-extern unsigned int __los_heap_addr_end__;
-#define LOSCFG_SYS_EXTERNAL_HEAP 1
-#define LOSCFG_SYS_HEAP_ADDR ((void *)&__los_heap_addr_start__)
-#define LOSCFG_SYS_HEAP_SIZE (((unsigned long)&__los_heap_addr_end__) - ((unsigned long)&__los_heap_addr_start__))
 
 // clock
 #define OS_SYS_CLOCK                                        SystemCoreClock
@@ -20,8 +15,8 @@ extern unsigned int __los_heap_addr_end__;
 /*=============================================================================
                                         Hardware interrupt module configuration
 =============================================================================*/
-#define LOSCFG_PLATFORM_HWI                                 1
-#define LOSCFG_USE_SYSTEM_DEFINED_INTERRUPT                 1
+#define LOSCFG_PLATFORM_HWI                                 0
+#define LOSCFG_USE_SYSTEM_DEFINED_INTERRUPT                 0
 #define LOSCFG_PLATFORM_HWI_LIMIT                           128
 /*=============================================================================
                                        Task module configuration
@@ -56,6 +51,12 @@ extern unsigned int __los_heap_addr_end__;
 /*=============================================================================
                                        Memory module configuration
 =============================================================================*/
+extern unsigned int __los_heap_addr_start__;
+extern unsigned int __los_heap_addr_end__;
+#define LOSCFG_SYS_EXTERNAL_HEAP 1
+#define LOSCFG_SYS_HEAP_ADDR ((void *)&__los_heap_addr_start__)
+#define LOSCFG_SYS_HEAP_SIZE (((unsigned long)&__los_heap_addr_end__) - ((unsigned long)&__los_heap_addr_start__))
+
 #define LOSCFG_MEM_MUL_POOL                                 1
 #define OS_SYS_MEM_NUM                                      20
 /*=============================================================================
@@ -71,9 +72,5 @@ extern unsigned int __los_heap_addr_end__;
 
 #define LOSCFG_BACKTRACE_TYPE                               1
 #define LOSCFG_BACKTRACE_DEPTH                              15
-
-// #define LOSCFG_SYS_HEAP_SIZE                                0x7000UL
-
-// #define LOSCFG_KERNEL_PM                                    0
 
 #endif // _TARGET_CONFIG_H

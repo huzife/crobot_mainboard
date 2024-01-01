@@ -9,6 +9,7 @@ kernel_module(module_name) {
         "src/core/i2c.c",
         "src/core/main.c",
         "src/core/stm32f4xx_hal_msp.c",
+        "src/core/stm32f4xx_hal_timebase_tim.c",
         "src/core/stm32f4xx_it.c",
         "src/core/system_stm32f4xx.c",
         "src/core/usart.c",
