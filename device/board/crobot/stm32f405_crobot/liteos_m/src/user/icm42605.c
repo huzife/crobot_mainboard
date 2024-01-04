@@ -2,6 +2,8 @@
 
 #include "los_task.h"
 
+ICM_Raw_Data icm_raw_data;
+
 float accel_sensitivity = 0.244f;  //加速度的最小分辨率 mg/LSB
 float gyro_sensitivity = 32.8f;  //陀螺仪的最小分辨率
 

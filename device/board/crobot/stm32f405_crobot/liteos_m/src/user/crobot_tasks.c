@@ -1,11 +1,15 @@
-#include "share_ware.h"
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_it.h"
+#include "bus_serial.h"
+#include "host_com.h"
+#include "icm42605.h"
+#include "kinematics.h"
+#include "modbus_rtu.h"
 #include "los_memory.h"
 #include "los_queue.h"
 #include "los_task.h"
 #include "los_interrupt.h"
-#include <string.h>
+
+#define MEMORY_POOL_SIZE 2048
+uint8_t mem_pool[MEMORY_POOL_SIZE];
 
 void task_delay(uint32_t ms) {
     LOS_TaskDelay(LOS_MS2Tick(ms));
@@ -13,27 +17,26 @@ void task_delay(uint32_t ms) {
 
 void communication_task(void) {
     printf("communication_task\n");
-    squeue_init(&data_queue);
-    data_parser_init(&parser);
-    HAL_UART_Receive_IT(&huart1, &com_rx_data, 1);
+    Host_Parser parser;
+    squeue_init(&host_rx_queue, mem_pool, 128);
+    host_parser_init(&parser, mem_pool, 128);
+    HAL_UART_Receive_IT(&huart1, &host_rx_data, 1);
 
     for (;;) {
         task_delay(1);
 
         // 接收并解析数据帧
-        while (!parser.flag) {
+        if (!parser.flag) {
             uint8_t data;
-            if (s_pop(&data_queue, &data))
+            if (s_pop(&host_rx_queue, &data))
                 parse(&parser, data);
-            else
-                task_delay(1);
         }
 
         // 处理数据
-        while (huart1.gState != HAL_UART_STATE_READY);
-
-        parser.flag = 0;
-        process_data((uint8_t*)parser.buf);
+        if (parser.flag && huart1.gState == HAL_UART_STATE_READY) {
+            parser.flag = 0;
+            process_data((uint8_t*)parser.buf);
+        }
     }
 }
 
@@ -63,6 +66,27 @@ void gpio_test_task(void) {
     }
 }
 
+void kinematics_task(void) {
+    printf("kinematics task\n");
+    Kinematics_2WD kinematics[2]; // 0: inverse, 1: forward
+    Kinematics_2WD_Param kinematics_param;
+
+    bus_serial_init(0, &huart1, NULL, 0);
+    kinematics_2WD_init(&kinematics[0]);
+    kinematics_2WD_init(&kinematics[1]);
+    kinematics_2WD_param_init(&kinematics_param);
+
+    kinematics[0].linear_x = 1;
+    kinematics_2WD_inverse(&kinematics[0], &kinematics_param);
+    uint16_t reg_vals[2] = {kinematics[0].speed_left,
+                            kinematics[0].speed_right};
+    modbus_rtu_set_holding_regs(0, 1, 0, reg_vals, 2);
+    kinematics_2WD_forward(&kinematics[0], &kinematics_param);
+    reg_vals[0] = kinematics[0].linear_x + 0.5;
+    reg_vals[1] = kinematics[0].angular_z + 0.5;
+    modbus_rtu_set_holding_regs(0, 1, 0, reg_vals, 2);
+}
+
 void create_task(uint32_t* task_id,
                  TSK_ENTRY_FUNC entry_func,
                  char* name,
@@ -85,20 +109,25 @@ void start_tasks(void) {
     uint32_t communication_task_id;
     uint32_t imu_task_id;
     uint32_t gpio_test_task_id;
+    uint32_t kinematics_task_id;
 
     // kernel init
     LOS_KernelInit();
+
+    LOS_MemInit(mem_pool, MEMORY_POOL_SIZE);
 
     // lock the task scheduling
     LOS_TaskLock();
 
     // create tasks
-    create_task(&communication_task_id, (TSK_ENTRY_FUNC)communication_task,
-                "communication_task", 5, 4096);
-    create_task(&imu_task_id, (TSK_ENTRY_FUNC)imu_task,
-                "imu_task", 5, 4096);
-    create_task(&gpio_test_task_id, (TSK_ENTRY_FUNC)gpio_test_task,
-                "gpio_test_task", 6, 1024);
+    // create_task(&communication_task_id, (TSK_ENTRY_FUNC)communication_task,
+    //             "communication_task", 5, 4096);
+    // create_task(&imu_task_id, (TSK_ENTRY_FUNC)imu_task,
+    //             "imu_task", 5, 4096);
+    // create_task(&gpio_test_task_id, (TSK_ENTRY_FUNC)gpio_test_task,
+    //             "gpio_test_task", 6, 1024);
+    create_task(&kinematics_task_id, (TSK_ENTRY_FUNC)kinematics_task,
+                "kinematics_task", 5, 4096);
 
     // unlock the task scheduling
     LOS_TaskUnlock();

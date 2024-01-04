@@ -1,5 +1,5 @@
-#ifndef SENSORS_ICM42605_H
-#define SENSORS_ICM42605_H
+#ifndef USER_ICM42605_H
+#define USER_ICM42605_H
 
 #include "stm32f4xx_hal.h"
 
@@ -180,8 +180,10 @@ typedef struct {
     __IO float angular_z;
 } ICM_Raw_Data;
 
+extern ICM_Raw_Data icm_raw_data;   // ICM42605 原始数据结构体
+
 int8_t icm_init(void);
 float icm_get_temperature(void);
 void icm_get_raw_data(ICM_Raw_Data* icm);
 
-#endif // SENSORS_ICM42605_H
+#endif // USER_ICM42605_H

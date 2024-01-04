@@ -13,11 +13,13 @@ kernel_module(module_name) {
         "src/core/stm32f4xx_it.c",
         "src/core/system_stm32f4xx.c",
         "src/core/usart.c",
+        "src/user/bus_serial.c",
         "src/user/crobot_tasks.c",
-        "src/user/data_com.c",
+        "src/user/host_com.c",
         "src/user/icm42605.c",
-        "src/user/s_queue.c",
-        "src/user/share_ware.c",
+        "src/user/kinematics.c",
+        "src/user/modbus_rtu.c",
+        "src/user/s_queue.c"
     ]
     include_dirs = [
         "include/core",

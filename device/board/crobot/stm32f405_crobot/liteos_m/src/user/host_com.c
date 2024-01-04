@@ -1,7 +1,17 @@
-#include "data_com.h"
-#include "share_ware.h"
-
+#include "host_com.h"
+#include "icm42605.h"
+#include "usart.h"
 #include "los_memory.h"
+
+uint8_t host_tx_buf[HOST_TX_BUF_SIZE];  // uart通信发送缓冲
+uint8_t host_rx_data;
+SQueue host_rx_queue;
+
+// 浮点数-十六进制转换
+typedef union {
+    uint8_t hex[4];
+    float float_value;
+} FloatHexUnion;
 
 /**
  *  函数功能：计算累加校验和
@@ -22,12 +32,13 @@ uint8_t check_sum(uint8_t* data, uint32_t len) {
  *  入口参数：数据解析器结构体指针、缓冲区长度
  *  返 回 值：None
  */
-void data_parser_init(Data_Parser *parser) {
-    parser->flag = 0;       // 解析完成标志位置零
-    parser->FE = 0;         // 帧头FE标志位置零
-    parser->FH = 0;         // 完整帧头标志位置零
-    parser->buf_len = 64;   // 缓冲区长度
-    parser->data_len = 0;   // 当前数据长度置零
+void host_parser_init(Host_Parser *parser, uint8_t* pool, uint16_t buf_len) {
+    parser->flag = 0;
+    parser->FE = 0;
+    parser->FH = 0;
+    parser->buf_len = buf_len;
+    parser->buf = (uint8_t*)LOS_MemAlloc(pool, buf_len);
+    parser->data_len = 0;
 }
 
 /**
@@ -35,7 +46,7 @@ void data_parser_init(Data_Parser *parser) {
  *  入口参数：数据解析器结构体指针、一个字节数据
  *  返 回 值：None
  */
-void parse(Data_Parser *parser, uint8_t data) {
+void parse(Host_Parser *parser, uint8_t data) {
     // 未完成则继续解析数据
     if (!parser->flag) {
         // 存入当前数据
@@ -99,14 +110,14 @@ void process_data(uint8_t *buf) {
             FloatHexUnion fh;
             fh.float_value = icm_get_temperature();
             for (int i = 0; i < 4; i++) {
-                com_tx_data[4 + i] = fh.hex[3 - i];
+                host_tx_buf[4 + i] = fh.hex[3 - i];
             }
 
-            com_tx_data[0] = 0xFE;
-            com_tx_data[1] = 0xEF;
-            com_tx_data[2] = 0x05;
-            com_tx_data[3] = 0x03;
-            com_tx_data[8] = check_sum((uint8_t*)com_tx_data, 8);
+            host_tx_buf[0] = 0xFE;
+            host_tx_buf[1] = 0xEF;
+            host_tx_buf[2] = 0x05;
+            host_tx_buf[3] = 0x03;
+            host_tx_buf[8] = check_sum((uint8_t*)host_tx_buf, 8);
 
             break;
         }
@@ -115,43 +126,50 @@ void process_data(uint8_t *buf) {
             FloatHexUnion fh;
             fh.float_value = icm_raw_data.accel_x;
             for (int i = 0; i < 4; i++) {
-                com_tx_data[4 + i] = fh.hex[3 - i];
+                host_tx_buf[4 + i] = fh.hex[3 - i];
             }
 
             fh.float_value = icm_raw_data.accel_y;
             for (int i = 0; i < 4; i++) {
-                com_tx_data[8 + i] = fh.hex[3 - i];
+                host_tx_buf[8 + i] = fh.hex[3 - i];
             }
 
             fh.float_value = icm_raw_data.accel_z;
             for (int i = 0; i < 4; i++) {
-                com_tx_data[12 + i] = fh.hex[3 - i];
+                host_tx_buf[12 + i] = fh.hex[3 - i];
             }
 
             fh.float_value = icm_raw_data.angular_x;
             for (int i = 0; i < 4; i++) {
-                com_tx_data[16 + i] = fh.hex[3 - i];
+                host_tx_buf[16 + i] = fh.hex[3 - i];
             }
 
             fh.float_value = icm_raw_data.angular_y;
             for (int i = 0; i < 4; i++) {
-                com_tx_data[20 + i] = fh.hex[3 - i];
+                host_tx_buf[20 + i] = fh.hex[3 - i];
             }
 
             fh.float_value = icm_raw_data.angular_z;
             for (int i = 0; i < 4; i++) {
-                com_tx_data[24 + i] = fh.hex[3 - i];
+                host_tx_buf[24 + i] = fh.hex[3 - i];
             }
 
-            com_tx_data[0] = 0xFE;
-            com_tx_data[1] = 0xEF;
-            com_tx_data[2] = 0x19;
-            com_tx_data[3] = 0x04;
-            com_tx_data[28] = check_sum((uint8_t*)com_tx_data, 28);
+            host_tx_buf[0] = 0xFE;
+            host_tx_buf[1] = 0xEF;
+            host_tx_buf[2] = 0x19;
+            host_tx_buf[3] = 0x04;
+            host_tx_buf[28] = check_sum((uint8_t*)host_tx_buf, 28);
 
             break;
         }
     }
 
-    HAL_UART_Transmit_DMA(&huart1, (uint8_t*)com_tx_data, com_tx_data[2] + 4);
+    HAL_UART_Transmit_DMA(&huart1, (uint8_t*)host_tx_buf, host_tx_buf[2] + 4);
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart) {
+  if (huart->Instance == USART1) {
+    s_push(&host_rx_queue, host_rx_data);
+    HAL_UART_Receive_IT(huart, &host_rx_data, 1);
+  }
 }
