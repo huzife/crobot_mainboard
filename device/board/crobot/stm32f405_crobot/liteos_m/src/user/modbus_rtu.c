@@ -1,5 +1,7 @@
 #include "modbus_rtu.h"
 #include "bus_serial.h"
+#include "stm32f4xx_hal_uart.h"
+#include "usart.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -14,12 +16,13 @@ typedef enum {
     SET_HOLDING_REGS = 0x10
 } Modbus_Function_Code;
 
-static uint8_t modbus_rtu_crc(const uint8_t* bus_buf, uint8_t len) {
-    uint32_t temp = 0xFFFF;
-    for (int i = 0; i < len; i++) {
-        temp ^= bus_buf[i];
-        for (int j = 0; j < 8; j++) {
-            uint32_t flag = temp & 0x0001;
+static uint16_t modbus_rtu_crc(const uint8_t* buf, uint8_t len) {
+    unsigned int temp, flag;
+    temp = 0xFFFF;
+    for (unsigned char i = 0; i < len; i++) {
+        temp = temp ^ buf[i];
+        for (unsigned char j = 1; j <= 8; j++) {
+            flag = temp & 0x0001;
             temp >>= 1;
             if (flag)
                 temp ^= 0xA001;
@@ -50,11 +53,13 @@ static bool modbus_rtu_get_regs(uint8_t bus_id,
     bus_write_buf[6] = crc & 0xFF;
     bus_write_buf[7] = crc >> 8;
 
-    bus_serial_write(bus_id, bus_write_buf, 8);
+    if (!bus_serial_write(bus_id, bus_write_buf, 8))
+        return false;
 
     // receive data
     uint16_t recv_len = 2 * len + 5;
-    bus_serial_read(bus_id, bus_read_buf, recv_len);
+    if (!bus_serial_read(bus_id, bus_read_buf, recv_len))
+        return false;
 
     crc = (bus_read_buf[recv_len - 1] << 8) | bus_read_buf[recv_len - 2];
     if (crc != modbus_rtu_crc(bus_read_buf, recv_len - 2))
@@ -110,13 +115,15 @@ bool modbus_rtu_set_holding_reg(uint8_t bus_id,
     bus_write_buf[6] = crc & 0xFF;
     bus_write_buf[7] = crc >> 8;
 
-    bus_serial_write(bus_id, bus_write_buf, 8);
+    if (!bus_serial_write(bus_id, bus_write_buf, 8))
+        return false;
 
     // receive data
     if (!addr)
         return true;
 
-    bus_serial_read(bus_id, bus_read_buf, 8);
+    if (!bus_serial_read(bus_id, bus_read_buf, 8))
+        return false;
 
     return memcmp(bus_write_buf, bus_read_buf, 8) == 0;
 }
@@ -147,15 +154,17 @@ bool modbus_rtu_set_holding_regs(uint8_t bus_id,
     bus_write_buf[idx++] = crc & 0xFF;
     bus_write_buf[idx++] = crc >> 8;
 
-    bus_serial_write(bus_id, bus_write_buf, 9 + len * 2);
+    if (!bus_serial_write(bus_id, bus_write_buf, 9 + len * 2))
+        return false;
 
     // receive data
     if (!addr)
         return true;
 
-    bus_serial_read(bus_id, bus_read_buf, 8);
+    if (!bus_serial_read(bus_id, bus_read_buf, 8))
+        return false;
 
-    if (!memcmp(bus_write_buf, bus_read_buf, 6))
+    if (memcmp(bus_write_buf, bus_read_buf, 6))
         return false;
 
     crc = modbus_rtu_crc(bus_read_buf, 6);

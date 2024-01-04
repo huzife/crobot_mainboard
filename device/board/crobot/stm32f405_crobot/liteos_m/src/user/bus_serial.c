@@ -23,7 +23,7 @@ bool bus_serial_read(uint16_t bus_id, uint8_t* buf, uint16_t len) {
     return true;
 }
 
-bool bus_serial_write(uint16_t bus_id, uint8_t* buf, uint16_t len) {
+bool  bus_serial_write(uint16_t bus_id, uint8_t* buf, uint16_t len) {
     if (bus_id >= BUS_NUM || bus_serial[bus_id].huart == NULL)
         return false;
 

@@ -7,6 +7,8 @@
 #include "los_queue.h"
 #include "los_task.h"
 #include "los_interrupt.h"
+#include "stm32f4xx_hal_uart.h"
+#include "usart.h"
 
 #define MEMORY_POOL_SIZE 2048
 uint8_t mem_pool[MEMORY_POOL_SIZE];
@@ -70,21 +72,17 @@ void kinematics_task(void) {
     printf("kinematics task\n");
     Kinematics_2WD kinematics[2]; // 0: inverse, 1: forward
     Kinematics_2WD_Param kinematics_param;
-
-    bus_serial_init(0, &huart1, NULL, 0);
     kinematics_2WD_init(&kinematics[0]);
     kinematics_2WD_init(&kinematics[1]);
     kinematics_2WD_param_init(&kinematics_param);
 
-    kinematics[0].linear_x = 1;
+    kinematics[0].linear_x = 0.2;
     kinematics_2WD_inverse(&kinematics[0], &kinematics_param);
     uint16_t reg_vals[2] = {kinematics[0].speed_left,
                             kinematics[0].speed_right};
-    modbus_rtu_set_holding_regs(0, 1, 0, reg_vals, 2);
-    kinematics_2WD_forward(&kinematics[0], &kinematics_param);
-    reg_vals[0] = kinematics[0].linear_x + 0.5;
-    reg_vals[1] = kinematics[0].angular_z + 0.5;
-    modbus_rtu_set_holding_regs(0, 1, 0, reg_vals, 2);
+    bus_serial_init(0, &huart5, NULL, 0);
+    bool ret = modbus_rtu_set_holding_regs(0, 1, 0, reg_vals, 2);
+    printf("ret: %d\n", ret);
 }
 
 void create_task(uint32_t* task_id,
