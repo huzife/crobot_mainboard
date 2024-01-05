@@ -8,6 +8,7 @@ kernel_module(module_name) {
         "src/core/gpio.c",
         "src/core/i2c.c",
         "src/core/main.c",
+        "src/core/spi.c",
         "src/core/stm32f4xx_hal_msp.c",
         "src/core/stm32f4xx_hal_timebase_tim.c",
         "src/core/stm32f4xx_it.c",
@@ -19,6 +20,7 @@ kernel_module(module_name) {
         "src/user/icm42605.c",
         "src/user/kinematics.c",
         "src/user/modbus_rtu.c",
+        "src/user/ps2.c",
         "src/user/s_queue.c"
     ]
     include_dirs = [

@@ -183,7 +183,7 @@ int8_t icm_init(void) {
     reg_val |= ((3) << 2);//设置GYRO_MODE  0:关闭 1:待机 2:预留 3:低噪声
     reg_val |= (3);//设置ACCEL_MODE 0:关闭 1:关闭 2:低功耗 3:低噪声
     icm_write_reg(ICM_PWR_MGMT0, reg_val);
-    LOS_TaskDelay(1); //操作完PWR—MGMT0寄存器后 200us内不能有任何读写寄存器的操作
+    LOS_UDelay(200); //操作完PWR—MGMT0寄存器后 200us内不能有任何读写寄存器的操作
 
     return 0;
 }

@@ -12,11 +12,13 @@ typedef struct {
 } Kinematics_2WD_Param;
 
 typedef struct {
-    double linear_x;        // X axis linear velocity, m/s
-    double angular_z;       // Z axis angular velocity, rad/s
-    int16_t speed_left;     // left motor speed, count/interval
-    int16_t speed_right;    // right motor speed, count/interval
+    double linear_x;    // X axis linear velocity, m/s
+    double angular_z;   // Z axis angular velocity, rad/s
+    int16_t speed[2];   // motor speed, 0: right, 1: left
 } Kinematics_2WD;
+
+extern volatile Kinematics_2WD kinematics[2]; // 0: inverse, 1: forward
+extern volatile Kinematics_2WD_Param kinematics_param;
 
 void kinematics_2WD_param_init(Kinematics_2WD_Param* param);
 void kinematics_2WD_init(Kinematics_2WD* kinematics);
