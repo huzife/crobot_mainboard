@@ -1,5 +1,4 @@
 #include "icm42605.h"
-
 #include "los_task.h"
 
 ICM_Raw_Data icm_raw_data;

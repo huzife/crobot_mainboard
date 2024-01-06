@@ -1,7 +1,6 @@
 #include "s_queue.h"
-#include "los_compiler.h"
-#include "los_memory.h"
 #include "los_atomic.h"
+#include "los_memory.h"
 
 inline uint32_t next_index(SQueue* queue, uint32_t cur) {
     return (cur + 1) % queue->size;

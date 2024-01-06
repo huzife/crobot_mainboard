@@ -2,13 +2,16 @@
 #define USER_HOST_COM_H
 
 #include "s_queue.h"
+#include "los_event.h"
 #include <stdint.h>
 
 #define HOST_TX_BUF_SIZE 64
+#define HOST_COM_TX_DONE 0x01
 
 extern uint8_t host_tx_buf[HOST_TX_BUF_SIZE];  // host通信发送缓冲
 extern uint8_t host_rx_data;
 extern SQueue host_rx_queue;
+extern EVENT_CB_S host_com_event;
 
 // 数据帧功能码
 typedef enum {

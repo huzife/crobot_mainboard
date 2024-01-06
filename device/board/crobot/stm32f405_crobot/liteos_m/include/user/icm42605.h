@@ -1,7 +1,7 @@
 #ifndef USER_ICM42605_H
 #define USER_ICM42605_H
 
-#include "stm32f4xx_hal.h"
+#include <stdint.h>
 
 #ifdef ICM42605_USE_HARD_SPI
 #define ICM_PORT_CS GPIOB
@@ -172,12 +172,12 @@
 #define ICM42605_ID  0x42
 
 typedef struct {
-    __IO float accel_x;
-    __IO float accel_y;
-    __IO float accel_z;
-    __IO float angular_x;
-    __IO float angular_y;
-    __IO float angular_z;
+    volatile float accel_x;
+    volatile float accel_y;
+    volatile float accel_z;
+    volatile float angular_x;
+    volatile float angular_y;
+    volatile float angular_z;
 } ICM_Raw_Data;
 
 extern ICM_Raw_Data icm_raw_data;   // ICM42605 原始数据结构体

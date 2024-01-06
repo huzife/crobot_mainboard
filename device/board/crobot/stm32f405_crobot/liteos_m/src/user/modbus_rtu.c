@@ -1,7 +1,5 @@
 #include "modbus_rtu.h"
 #include "bus_serial.h"
-#include "stm32f4xx_hal_uart.h"
-#include "usart.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -34,6 +32,7 @@ static uint16_t modbus_rtu_crc(const uint8_t* buf, uint8_t len) {
 
 static bool modbus_rtu_get_regs(uint8_t bus_id,
                                 uint8_t addr,
+
                                 Modbus_Function_Code code,
                                 uint16_t start,
                                 uint16_t len,
