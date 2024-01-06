@@ -7,15 +7,9 @@
 
 #define BUS_NUM 1
 
-typedef struct {
-    UART_HandleTypeDef* huart;
-    GPIO_TypeDef* txen_port;
-    uint16_t txen_pin;
-} Bus_Serial;
-
-bool bus_serial_init(uint16_t bus_id, UART_HandleTypeDef* huart,
+bool bus_serial_init(uint16_t id, UART_HandleTypeDef* huart,
                      GPIO_TypeDef* txen_port, uint16_t txen_pin);
-bool bus_serial_read(uint16_t bus_id, uint8_t* buf, uint16_t len);
-bool bus_serial_write(uint16_t bus_id, uint8_t* buf, uint16_t len);
+bool bus_serial_request(uint16_t id, uint8_t* write_buf, uint16_t write_len,
+                        uint8_t* read_buf, uint16_t read_len, uint32_t timeout);
 
 #endif // USER_BUS_SERIAL_H

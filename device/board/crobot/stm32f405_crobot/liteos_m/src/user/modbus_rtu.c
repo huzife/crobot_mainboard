@@ -3,9 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define BUF_SIZE 128
-static uint8_t bus_write_buf[BUF_SIZE];
-static uint8_t bus_read_buf[BUF_SIZE];
+#define MAX_BUF_SIZE 32
 
 typedef enum {
     GET_HOLDING_REG = 0x03,
@@ -32,13 +30,15 @@ static uint16_t modbus_rtu_crc(const uint8_t* buf, uint8_t len) {
 
 static bool modbus_rtu_get_regs(uint8_t bus_id,
                                 uint8_t addr,
-
                                 Modbus_Function_Code code,
                                 uint16_t start,
                                 uint16_t len,
                                 uint16_t* read_buf) {
-    if (bus_id >= BUS_NUM || 2 * len + 5 > BUF_SIZE)
+    if (bus_id >= BUS_NUM || 2 * len + 5 > MAX_BUF_SIZE)
         return false;
+
+    uint8_t bus_write_buf[8];
+    uint8_t bus_read_buf[MAX_BUF_SIZE];
 
     // send data
     bus_write_buf[0] = addr;
@@ -52,12 +52,9 @@ static bool modbus_rtu_get_regs(uint8_t bus_id,
     bus_write_buf[6] = crc & 0xFF;
     bus_write_buf[7] = crc >> 8;
 
-    if (!bus_serial_write(bus_id, bus_write_buf, 8))
-        return false;
-
-    // receive data
     uint16_t recv_len = 2 * len + 5;
-    if (!bus_serial_read(bus_id, bus_read_buf, recv_len))
+
+    if (!bus_serial_request(bus_id, bus_write_buf, 8, bus_read_buf, recv_len, 100))
         return false;
 
     crc = (bus_read_buf[recv_len - 1] << 8) | bus_read_buf[recv_len - 2];
@@ -102,6 +99,9 @@ bool modbus_rtu_set_holding_reg(uint8_t bus_id,
     if (bus_id >= BUS_NUM)
         return false;
 
+    uint8_t bus_write_buf[8];
+    uint8_t bus_read_buf[8];
+
     // send data
     bus_write_buf[0] = addr;
     bus_write_buf[1] = SET_HOLDING_REG;
@@ -114,15 +114,13 @@ bool modbus_rtu_set_holding_reg(uint8_t bus_id,
     bus_write_buf[6] = crc & 0xFF;
     bus_write_buf[7] = crc >> 8;
 
-    if (!bus_serial_write(bus_id, bus_write_buf, 8))
+    uint16_t recv_len = addr ? 8 : 0;
+
+    if (!bus_serial_request(bus_id, bus_write_buf, 8, bus_read_buf, recv_len, 100))
         return false;
 
-    // receive data
     if (!addr)
         return true;
-
-    if (!bus_serial_read(bus_id, bus_read_buf, 8))
-        return false;
 
     return memcmp(bus_write_buf, bus_read_buf, 8) == 0;
 }
@@ -132,8 +130,11 @@ bool modbus_rtu_set_holding_regs(uint8_t bus_id,
                                  uint16_t start,
                                  uint16_t* vals,
                                  uint16_t len) {
-    if (bus_id >= BUS_NUM || 2 * len + 9 > BUF_SIZE)
+    if (bus_id >= BUS_NUM || 2 * len + 9 > MAX_BUF_SIZE)
         return false;
+
+    uint8_t bus_write_buf[MAX_BUF_SIZE];
+    uint8_t bus_read_buf[8];
 
     bus_write_buf[0] = addr;
     bus_write_buf[1] = SET_HOLDING_REGS;
@@ -153,15 +154,13 @@ bool modbus_rtu_set_holding_regs(uint8_t bus_id,
     bus_write_buf[idx++] = crc & 0xFF;
     bus_write_buf[idx++] = crc >> 8;
 
-    if (!bus_serial_write(bus_id, bus_write_buf, 9 + len * 2))
+    uint16_t recv_len = addr ? 8 : 0;
+
+    if (!bus_serial_request(bus_id, bus_write_buf, 9 + len * 2, bus_read_buf, recv_len, 100))
         return false;
 
-    // receive data
     if (!addr)
         return true;
-
-    if (!bus_serial_read(bus_id, bus_read_buf, 8))
-        return false;
 
     if (memcmp(bus_write_buf, bus_read_buf, 6))
         return false;

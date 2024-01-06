@@ -136,9 +136,9 @@ void controller_task(void) {
 void kinematics_task(void) {
     // printf("kinematics task\n");
     vel_mux_init(mem_pool, 8);
-    kinematics_2WD_init(&kinematics[0]);
-    kinematics_2WD_init(&kinematics[1]);
-    kinematics_2WD_param_init(&kinematics_param);
+    kinematics_2WD_init((Kinematics_2WD*)&kinematics[0]);
+    kinematics_2WD_init((Kinematics_2WD*)&kinematics[1]);
+    kinematics_2WD_param_init((Kinematics_2WD_Param*)&kinematics_param);
     bus_serial_init(0, &huart5, NULL, 0);
 
     uint16_t val[2];
@@ -158,7 +158,8 @@ void kinematics_task(void) {
     }
 
     while (true) {
-        kinematics_2WD_inverse(&kinematics[0], &kinematics_param);
+        kinematics_2WD_inverse((Kinematics_2WD*)&kinematics[0],
+                               (Kinematics_2WD_Param*)&kinematics_param);
         val[0] = kinematics[0].speed[0];
         val[1] = kinematics[0].speed[1];
         modbus_rtu_set_holding_regs(0, 1, 0, val, 2);

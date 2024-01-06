@@ -38,7 +38,7 @@ int vel_mux_register(uint32_t priority, uint16_t expiry_time) {
 }
 
 void vel_mux_set_velocity(Velocity_Message* velocity) {
-    LOS_EventRead(&vel_mux_event, VEL_MUX_INIT, LOS_WAITMODE_AND, LOS_WAIT_FOREVER);
+    LOS_EventRead(&vel_mux_event, VEL_MUX_INIT, LOS_WAITMODE_AND, 0);
 
     uint32_t id = velocity->id;
     if (id >= vel_mux_info.count)
