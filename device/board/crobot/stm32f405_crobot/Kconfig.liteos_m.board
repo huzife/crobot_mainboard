@@ -1,3 +1,44 @@
 config BOARD_STM32F405_CROBOT
     bool "select board STM32F405"
     depends on SOC_STM32F405RGT6
+
+menu "Device Configuration"
+    depends on BOARD_STM32F405_CROBOT
+
+choice HOST_COM_CONFIG
+    prompt "host communication config"
+
+config HOST_COM_USART1
+    bool "usart1"
+
+config HOST_COM_USART1_CH340
+    bool "usart1 with ch340"
+
+config HOST_COM_USB
+    bool "usb"
+
+endchoice # HOST_COM_CONFIG
+
+choice ICM42605_CONFIG
+    prompt "ICM42605 config"
+
+config ICM42605_USE_HARD_I2C
+    bool "hard i2c"
+
+config ICM42605_USE_HARD_SPI
+    bool "hard spi"
+
+endchoice # ICM42605_CONFIG
+
+choice PS2_CONTROLLER_CONFIG
+    prompt "PS2 controller config"
+
+config PS2_USE_HARD_SPI
+    bool "hard spi"
+
+config PS2_USE_SOFT_SPI
+    bool "soft spi"
+
+endchoice # PS2_CONTROLLER_CONFIG
+
+endmenu # BOARD_STM32F405_CROBOT_DEVICE_CONFIG

@@ -5,14 +5,12 @@
 #define PS2_CS_LOW() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET)
 #define PS2_CS_HIGH() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET)
 
-#if defined (PS2_USE_SOFT_SPI)
+#if defined LOSCFG_PS2_USE_SOFT_SPI
 #define PS2_CLK_LOW() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET)
 #define PS2_CLK_HIGH() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET)
 #define PS2_DO_LOW() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET)
 #define PS2_DO_HIGH() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET)
 #define PS2_READ_DI() HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6)
-#elif !defined (PS2_USE_HARD_SPI)
-#error "Neither 'PS2_USE_HARD_SPI' nor 'PS2_USE_SOFT_SPI' is defined!"
 #endif
 
 static uint8_t ps2_data[9];
@@ -68,9 +66,9 @@ static void ps2_decode() {
 }
 
 static void ps2_swap_byte(uint8_t tx_byte, uint8_t* rx_byte) {
-#if defined (PS2_USE_HARD_SPI)
+#if defined LOSCFG_PS2_USE_HARD_SPI
     HAL_SPI_TransmitReceive(&hspi1, &tx_byte, rx_byte, 1, 0xFFFF);
-#elif defined (PS2_USE_SOFT_SPI)
+#elif defined LOSCFG_PS2_USE_SOFT_SPI
     uint8_t rx = 0;
     for (int i = 0; i < 8; i++) {
         if (tx_byte & 0x01)

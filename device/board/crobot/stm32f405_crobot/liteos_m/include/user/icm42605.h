@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#ifdef ICM42605_USE_HARD_SPI
+#ifdef LOSCFG_ICM42605_USE_HARD_SPI
 #define ICM_PORT_CS GPIOB
 #define ICM_PIN_CS GPIO_PIN_11
 #endif

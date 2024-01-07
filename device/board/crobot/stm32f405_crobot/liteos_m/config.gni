@@ -42,9 +42,7 @@ board_cflags = [
     "-ffunction-sections",
     "-fno-omit-frame-pointer",
     "-DUSE_HAL_DRIVER",
-    "-DSTM32F405xx",
-    "-DICM42605_USE_HARD_I2C",
-    "-DPS2_USE_HARD_SPI"
+    "-DSTM32F405xx"
 ]
 board_cflags += board_opt_flags
 
