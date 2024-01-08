@@ -11,9 +11,6 @@ choice HOST_COM_CONFIG
 config HOST_COM_USART1
     bool "usart1"
 
-config HOST_COM_USART1_CH340
-    bool "usart1 with ch340"
-
 config HOST_COM_USB
     bool "usb"
 
