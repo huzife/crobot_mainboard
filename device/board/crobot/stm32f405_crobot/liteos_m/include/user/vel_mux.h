@@ -1,10 +1,7 @@
 #ifndef USER_VEL_MUX_H
 #define USER_VEL_MUX_H
 
-#include "los_event.h"
-#include "los_queue.h"
-
-extern EVENT_CB_S vel_mux_event;
+#include <stdint.h>
 
 typedef struct {
     uint32_t id;

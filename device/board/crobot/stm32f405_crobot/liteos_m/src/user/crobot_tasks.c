@@ -16,8 +16,15 @@
 #define MEMORY_POOL_SIZE 2048
 uint8_t mem_pool[MEMORY_POOL_SIZE];
 
+uint32_t host_com_task_id;
+uint32_t imu_task_id;
+uint32_t bumper_task_id;
+uint32_t controller_task_id;
+uint32_t kinematics_task_id;
+
 void host_com_task(void) {
     Host_Parser parser;
+    icm_init();
     squeue_init(&host_rx_queue, mem_pool, 128);
     host_parser_init(&parser, mem_pool, 128);
     HAL_UART_Receive_IT(&huart1, &host_rx_data, 1);
@@ -43,14 +50,6 @@ void host_com_task(void) {
             parser.flag = 0;
             process_data((uint8_t*)parser.buf);
         }
-    }
-}
-
-void imu_task(void) {
-    icm_init();
-    while (true) {
-        icm_get_raw_data(&icm_raw_data);
-        LOS_TaskDelay(10);
     }
 }
 
@@ -133,40 +132,6 @@ void controller_task(void) {
     }
 }
 
-void kinematics_task(void) {
-    // printf("kinematics task\n");
-    vel_mux_init(mem_pool, 8);
-    kinematics_2WD_init((Kinematics_2WD*)&kinematics[0]);
-    kinematics_2WD_init((Kinematics_2WD*)&kinematics[1]);
-    kinematics_2WD_param_init((Kinematics_2WD_Param*)&kinematics_param);
-    bus_serial_init(0, &huart5, NULL, 0);
-
-    uint16_t val[2];
-    if (!modbus_rtu_get_input_regs(0, 1, 5, 1, val)) {
-        printf("Failed to get protocol version\n");
-        return;
-    }
-
-    if (val[0] < 2) {
-        printf("Protocol version too low\n");
-        return;
-    }
-
-    if (!modbus_rtu_set_holding_reg(0, 1, 0x13, 50)) {
-        printf("Failed to set PID interval\n");
-        return;
-    }
-
-    while (true) {
-        kinematics_2WD_inverse((Kinematics_2WD*)&kinematics[0],
-                               (Kinematics_2WD_Param*)&kinematics_param);
-        val[0] = kinematics[0].speed[0];
-        val[1] = kinematics[0].speed[1];
-        modbus_rtu_set_holding_regs(0, 1, 0, val, 2);
-        LOS_TaskDelay(10);
-    }
-}
-
 void create_task(uint32_t* task_id,
                  TSK_ENTRY_FUNC entry_func,
                  char* name,
@@ -185,34 +150,28 @@ void create_task(uint32_t* task_id,
         printf("%s create success\n", name);
 }
 
-void start_tasks(void) {
-    uint32_t host_com_task_id;
-    uint32_t imu_task_id;
-    uint32_t bumper_task_id;
-    uint32_t controller_task_id;
-    uint32_t kinematics_task_id;
-
-    // kernel init
+void crobot_init() {
     LOS_KernelInit();
 
-    // public resourece init
+    // Initialize resources that are used by multiple tasks
     LOS_MemInit(mem_pool, MEMORY_POOL_SIZE);
-    LOS_EventInit(&vel_mux_event);
+    bus_serial_init(0, &huart5, NULL, 0);
+    vel_mux_init(mem_pool, 8);
+}
+
+void start_tasks(void) {
+    crobot_init();
 
     // lock the task scheduling
     LOS_TaskLock();
 
     // create tasks
     create_task(&host_com_task_id, (TSK_ENTRY_FUNC)host_com_task,
-                "host_com_task", 8, 0x1000);
-    create_task(&imu_task_id, (TSK_ENTRY_FUNC)imu_task,
-                "imu_task", 10, 0x1000);
+                "host_com_task", 7, 0x1000);
     create_task(&bumper_task_id, (TSK_ENTRY_FUNC)bumper_task,
-                "bumper_task", 7, 0x1000);
+                "bumper_task", 6, 0x1000);
     create_task(&controller_task_id, (TSK_ENTRY_FUNC)controller_task,
-                "controller_task", 7, 0x1000);
-    create_task(&kinematics_task_id, (TSK_ENTRY_FUNC)kinematics_task,
-                "kinematics_task", 6, 0x1000);
+                "controller_task", 6, 0x1000);
 
     // unlock the task scheduling
     LOS_TaskUnlock();

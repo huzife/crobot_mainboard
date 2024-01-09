@@ -45,6 +45,7 @@ static void get_imu_temperature_func() {
 
 static void get_imu_func() {
     FloatHexUnion fh;
+    icm_get_raw_data(&icm_raw_data);
     fh.float_value = icm_raw_data.accel_x;
     for (int i = 0; i < 4; i++) {
         host_tx_buf[4 + i] = fh.hex[3 - i];
