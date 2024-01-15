@@ -29,7 +29,7 @@ kernel_module(module_name) {
 config("public") {
     include_dirs = [
         ".",
-        "//device/board/crobot/stm32f405_crobot/liteos_m/include/core",
+        "//device/board/crobot/stm32f405_crobot/liteos_m/core/include",
         "Drivers/STM32F4xx_HAL_Driver/Inc",
         "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
         "Drivers/CMSIS/Device/ST/STM32F4xx/Include",

@@ -1,0 +1,18 @@
+import("//kernel/liteos_m/liteos.gni")
+module_name = get_path_info(rebase_path("."), "name")
+kernel_module(module_name) {
+    sources = [
+        "src/bus_serial.c",
+        "src/crobot_tasks.c",
+        "src/host_com.c",
+        "src/icm42605.c",
+        "src/kinematics.c",
+        "src/modbus_rtu.c",
+        "src/ps2.c",
+        "src/s_queue.c",
+        "src/vel_mux.c"
+    ]
+    include_dirs = [
+        "include"
+    ]
+}
