@@ -1,0 +1,13 @@
+/*
+/device/*
+/device/board/*
+/device/soc/*
+/vendor/*
+
+!/device
+!/device/board
+!/device/board/crobot
+!/device/soc/stm32
+!/vendor/crobot
+
+!.gitignore
