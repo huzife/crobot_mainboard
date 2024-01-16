@@ -3,7 +3,6 @@ module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
     sources = [
         "startup_stm32f405xx.s",
-        "src/dma.c",
         "src/dprintf.c",
         "src/gpio.c",
         "src/i2c.c",
@@ -16,12 +15,12 @@ kernel_module(module_name) {
         "src/tim.c",
         "src/usart.c"
     ]
-    include_dirs = [
-        "include"
-    ]
 }
 
 config("public") {
+    include_dirs = [
+        "include"
+    ]
     ldflags = [
         "-Wl,-T" + rebase_path("STM32F405RGTx_FLASH.ld"),
         "-Wl,-u_printf_float",

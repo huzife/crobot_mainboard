@@ -1,6 +1,5 @@
 #include "modbus_rtu.h"
 #include "bus_serial.h"
-#include <stdint.h>
 #include <string.h>
 
 #define MAX_BUF_SIZE 32

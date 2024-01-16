@@ -3,7 +3,6 @@
 
 #include "usart.h"
 #include <stdbool.h>
-#include <stdint.h>
 
 #define BUS_NUM 1
 

@@ -13,6 +13,8 @@ kernel_module(module_name) {
         "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c",
         "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c",
         "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c",
+        "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd_ex.c",
+        "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pcd.c",
         "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c",
         "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c",
         "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c",
@@ -22,6 +24,11 @@ kernel_module(module_name) {
         "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c",
         "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c",
         "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c",
+        "Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c",
+        "Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c",
+        "Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c",
+        "Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c",
+        "Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c",
     ]
 }
 
@@ -29,10 +36,11 @@ kernel_module(module_name) {
 config("public") {
     include_dirs = [
         ".",
-        "//device/board/crobot/stm32f405_crobot/liteos_m/core/include",
         "Drivers/STM32F4xx_HAL_Driver/Inc",
         "Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
         "Drivers/CMSIS/Device/ST/STM32F4xx/Include",
-        "Drivers/CMSIS/Include"
+        "Drivers/CMSIS/Include",
+        "Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc",
+        "Middlewares/ST/STM32_USB_Device_Library/Core/Inc",
     ]
 }

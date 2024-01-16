@@ -1,16 +1,12 @@
 #include "bus_serial.h"
 #include "host_com.h"
 #include "icm42605.h"
-#include "kinematics.h"
-#include "modbus_rtu.h"
 #include "ps2.h"
 #include "vel_mux.h"
 #include "los_event.h"
-#include "los_interrupt.h"
 #include "los_memory.h"
-#include "los_queue.h"
 #include "los_task.h"
-#include "los_tick.h"
+#include "usb_device.h"
 #include <stdbool.h>
 
 #define MEMORY_POOL_SIZE 2048
@@ -23,33 +19,17 @@ uint32_t controller_task_id;
 uint32_t kinematics_task_id;
 
 void host_com_task(void) {
-    Host_Parser parser;
     icm_init();
-    squeue_init(&host_rx_queue, mem_pool, 128);
-    host_parser_init(&parser, mem_pool, 128);
-    HAL_UART_Receive_IT(&huart1, &host_rx_data, 1);
+    host_com_init(mem_pool, 128);
+    MX_USB_DEVICE_Init();
     LOS_EventInit(&host_com_event);
     LOS_EventWrite(&host_com_event, HOST_COM_TX_DONE);
 
     while (true) {
         LOS_TaskDelay(1);
 
-        // 接收并解析数据帧
-        if (!parser.flag) {
-            uint8_t data;
-            if (s_pop(&host_rx_queue, &data))
-                parse(&parser, data);
-        }
-
-        // 处理数据
-        if (parser.flag) {
-            LOS_EventRead(&host_com_event,
-                          HOST_COM_TX_DONE,
-                          LOS_WAITMODE_AND | LOS_WAITMODE_CLR,
-                          LOS_WAIT_FOREVER);
-            parser.flag = 0;
-            process_data((uint8_t*)parser.buf);
-        }
+        if (host_com_parse())
+            host_com_process();
     }
 }
 
@@ -167,7 +147,7 @@ void start_tasks(void) {
 
     // create tasks
     create_task(&host_com_task_id, (TSK_ENTRY_FUNC)host_com_task,
-                "host_com_task", 7, 0x1000);
+                "host_com_task", 6, 0x1000);
     create_task(&bumper_task_id, (TSK_ENTRY_FUNC)bumper_task,
                 "bumper_task", 6, 0x1000);
     create_task(&controller_task_id, (TSK_ENTRY_FUNC)controller_task,

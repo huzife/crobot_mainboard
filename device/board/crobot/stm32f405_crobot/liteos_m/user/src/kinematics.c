@@ -1,5 +1,4 @@
 #include "kinematics.h"
-#include <stdint.h>
 
 const double PI = 3.1415926535;
 const double RADIUS = 0.0325;

@@ -9,7 +9,7 @@ kernel_module(module_name) {
         "src/kinematics.c",
         "src/modbus_rtu.c",
         "src/ps2.c",
-        "src/s_queue.c",
+        "src/swsr_queue.c",
         "src/vel_mux.c"
     ]
     include_dirs = [

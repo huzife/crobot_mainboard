@@ -56,8 +56,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern DMA_HandleTypeDef hdma_usart1_tx;
-extern UART_HandleTypeDef huart1;
+extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 
@@ -175,6 +174,7 @@ void DebugMon_Handler(void)
 void PendSV_Handler(void)
 {
   /* USER CODE BEGIN PendSV_IRQn 0 */
+  extern void HalPendSV();
   HalPendSV();
   /* USER CODE END PendSV_IRQn 0 */
   /* USER CODE BEGIN PendSV_IRQn 1 */
@@ -188,6 +188,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   /* USER CODE BEGIN SysTick_IRQn 0 */
+  extern void OsTickHandler();
   OsTickHandler();
   /* USER CODE END SysTick_IRQn 0 */
 
@@ -202,20 +203,6 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
-
-/**
-  * @brief This function handles USART1 global interrupt.
-  */
-void USART1_IRQHandler(void)
-{
-  /* USER CODE BEGIN USART1_IRQn 0 */
-
-  /* USER CODE END USART1_IRQn 0 */
-  HAL_UART_IRQHandler(&huart1);
-  /* USER CODE BEGIN USART1_IRQn 1 */
-
-  /* USER CODE END USART1_IRQn 1 */
-}
 
 /**
   * @brief This function handles TIM6 global interrupt, DAC1 and DAC2 underrun error interrupts.
@@ -247,18 +234,17 @@ void TIM7_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles DMA2 stream7 global interrupt.
+  * @brief This function handles USB On The Go FS global interrupt.
   */
-void DMA2_Stream7_IRQHandler(void)
+void OTG_FS_IRQHandler(void)
 {
-  /* USER CODE BEGIN DMA2_Stream7_IRQn 0 */
+  /* USER CODE BEGIN OTG_FS_IRQn 0 */
 
-  /* USER CODE END DMA2_Stream7_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_usart1_tx);
-  /* USER CODE BEGIN DMA2_Stream7_IRQn 1 */
-  extern void host_tx_callback();
-  host_tx_callback();
-  /* USER CODE END DMA2_Stream7_IRQn 1 */
+  /* USER CODE END OTG_FS_IRQn 0 */
+  HAL_PCD_IRQHandler(&hpcd_USB_OTG_FS);
+  /* USER CODE BEGIN OTG_FS_IRQn 1 */
+
+  /* USER CODE END OTG_FS_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

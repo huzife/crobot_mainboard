@@ -1,13 +1,18 @@
 /*
+/.vscode/*
 /device/*
 /device/board/*
 /device/soc/*
 /vendor/*
 
-!/device
-!/device/board
-!/device/board/crobot
-!/device/soc/stm32
-!/vendor/crobot
+!.vscode
+!.vscode/settings.json
+!device
+!device/board
+!device/board/crobot
+!device/soc
+!device/soc/stm32
+!vendor/crobot
 
+!.clangd
 !.gitignore

@@ -1,8 +1,8 @@
 #ifndef USER_KINEMATICS_H
 #define USER_KINEMATICS_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef struct {
     double radius;

@@ -5,4 +5,7 @@ module_group(module_name) {
         "core",
         "user"
     ]
+    modules += [
+        "usb_device"
+    ]
 }

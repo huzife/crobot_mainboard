@@ -1,7 +1,6 @@
 #ifndef USER_MODBUS_RTU_H
 #define USER_MODBUS_RTU_H
 
-#include "usart.h"
 #include <stdbool.h>
 #include <stdint.h>
 
