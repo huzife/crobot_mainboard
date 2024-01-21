@@ -137,7 +137,7 @@ void host_com_process() {
     LOS_EventRead(&host_com_event,
                   HOST_COM_TX_DONE,
                   LOS_WAITMODE_AND | LOS_WAITMODE_CLR,
-                  LOS_WAIT_FOREVER);
+                  100);
     CDC_Transmit_FS(host_com_cb.buf, host_com_cb.buf[2] + 3);
 }
 

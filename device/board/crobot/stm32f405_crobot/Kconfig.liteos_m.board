@@ -5,17 +5,6 @@ config BOARD_STM32F405_CROBOT
 menu "Device Configuration"
     depends on BOARD_STM32F405_CROBOT
 
-choice HOST_COM_CONFIG
-    prompt "host communication config"
-
-config HOST_COM_USART1
-    bool "usart1"
-
-config HOST_COM_USB
-    bool "usb"
-
-endchoice # HOST_COM_CONFIG
-
 choice ICM42605_CONFIG
     prompt "ICM42605 config"
 
