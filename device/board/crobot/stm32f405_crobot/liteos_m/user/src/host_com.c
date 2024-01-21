@@ -3,7 +3,6 @@
 #include "swsr_queue.h"
 #include "los_event.h"
 #include "los_memory.h"
-#include "los_task.h"
 #include "usbd_cdc_if.h"
 #include <stdbool.h>
 
