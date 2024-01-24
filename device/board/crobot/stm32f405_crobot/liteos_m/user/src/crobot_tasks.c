@@ -1,4 +1,5 @@
 #include "bus_serial.h"
+#include "bumper.h"
 #include "host_com.h"
 #include "icm42605.h"
 #include "ps2.h"
@@ -34,65 +35,51 @@ void host_com_task(void) {
 }
 
 void bumper_task(void) {
-    int vel_id = vel_mux_register(0, 2000);
+    int vel_id = vel_mux_register(0, 200);
     if (vel_id < 0) {
         printf("Register bumper failed\n");
         return;
     }
 
-    uint8_t bumper_state = 0;
     Velocity_Message velocity = {0};
     velocity.id = vel_id;
 
     while (true) {
-        bool flag = false;
         velocity.linear_x = 0;
         velocity.angular_z = 0;
 
-        // left
-        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5)) {
-            bumper_state &= ~(1 << 2);
-        } else {
-            if (bumper_state & (1 << 2)) {
-                flag = true;
+        Bumper_State state = bumper_check();
+        if (state.left || state.front || state.right) {
+            if (state.left) {
                 velocity.linear_x -= 0.1;
                 velocity.angular_z -= 0.4;
             }
-            bumper_state |= (1 << 2);
-        }
-
-        // front
-        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3)) {
-            bumper_state &= ~(1 << 0);
-        } else {
-            if (bumper_state & (1 << 0)) {
-                flag = true;
+            if (state.front) {
                 velocity.linear_x -= 0.1;
             }
-            bumper_state |= (1 << 0);
-        }
-
-        // right
-        if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4)) {
-            bumper_state &= ~(1 << 1);
-        } else {
-            if (bumper_state & (1 << 1)) {
-                flag = true;
+            if (state.right) {
                 velocity.linear_x -= 0.1;
                 velocity.angular_z += 0.4;
             }
-            bumper_state |= (1 << 1);
-        }
 
-        if (flag)
+            // set velocity
+            for (int i = 0; i < 20; i++) {
+                vel_mux_set_velocity(&velocity);
+                LOS_TaskDelay(100);
+            }
+
+            // stop
+            velocity.linear_x = 0.0;
+            velocity.angular_z = 0.0;
             vel_mux_set_velocity(&velocity);
+        }
 
         LOS_TaskDelay(10);
     }
 }
 
 void controller_task(void) {
-    int vel_id = vel_mux_register(1, 0);
+    int vel_id = vel_mux_register(1, 100);
     if (vel_id < 0) {
         printf("Register controller failed\n");
         return;
