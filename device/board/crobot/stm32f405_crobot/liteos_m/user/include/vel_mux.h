@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define MAX_EXPIRY_TIME 1000
+
 typedef struct {
     uint32_t id;
     double linear_x;
