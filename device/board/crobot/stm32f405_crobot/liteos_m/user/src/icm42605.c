@@ -1,8 +1,6 @@
 #include "icm42605.h"
 #include "los_task.h"
 
-ICM_Raw_Data icm_raw_data;
-
 static float accel_sensitivity = 0.244f;  //加速度的最小分辨率 mg/LSB
 static float gyro_sensitivity = 32.8f;  //陀螺仪的最小分辨率
 
@@ -98,7 +96,7 @@ float icm_set_gres(uint8_t scale) {
     return gyro_sensitivity;
 }
 
-int8_t icm_init(void) {
+bool icm_init() {
     uint8_t reg_val = 0;
     icm_read_regs(ICM_WHO_AM_I, &reg_val, 1);
 
@@ -161,13 +159,17 @@ float icm_get_temperature() {
     return (int16_t)((buf[0] << 8) | buf[1]) / 132.48 + 25;
 }
 
-void icm_get_raw_data(ICM_Raw_Data* icm) {
+ICM_Raw_Data icm_get_raw_data() {
     uint8_t buf[12] = {0};
     icm_read_regs(ICM_ACCEL_DATA_X1, buf, 12);
-    icm->accel_x = (int16_t)((buf[0] << 8) | buf[1]) * accel_sensitivity;
-    icm->accel_y = (int16_t)((buf[2] << 8) | buf[3]) * accel_sensitivity;
-    icm->accel_z = (int16_t)((buf[4] << 8) | buf[5]) * accel_sensitivity;
-    icm->angular_x = (int16_t)((buf[6] << 8) | buf[7]) * gyro_sensitivity;
-    icm->angular_y = (int16_t)((buf[8] << 8) | buf[9]) * gyro_sensitivity;
-    icm->angular_z = (int16_t)((buf[10] << 8) | buf[11]) * gyro_sensitivity;
+
+    ICM_Raw_Data raw_data;
+    raw_data.accel_x = (int16_t)((buf[0] << 8) | buf[1]) * accel_sensitivity;
+    raw_data.accel_y = (int16_t)((buf[2] << 8) | buf[3]) * accel_sensitivity;
+    raw_data.accel_z = (int16_t)((buf[4] << 8) | buf[5]) * accel_sensitivity;
+    raw_data.angular_x = (int16_t)((buf[6] << 8) | buf[7]) * gyro_sensitivity;
+    raw_data.angular_y = (int16_t)((buf[8] << 8) | buf[9]) * gyro_sensitivity;
+    raw_data.angular_z = (int16_t)((buf[10] << 8) | buf[11]) * gyro_sensitivity;
+
+    return raw_data;
 }

@@ -15,6 +15,7 @@ typedef enum {
     HOST_COM_RX_DATA
 } Host_Com_Rx_State;
 
+// host com control block
 static struct {
     Host_Com_Rx_State state;
     uint8_t* buf;
@@ -23,7 +24,7 @@ static struct {
     SWSR_Queue rx_queue;
 } host_com_cb;
 
-// 浮点数-十六进制转换
+// float-hex convertion union
 typedef union {
     float val;
     uint8_t hex[4];
@@ -58,13 +59,13 @@ static void get_imu_data_func() {
     host_com_cb.buf[2] = 0x19;
     host_com_cb.buf[3] = 0x04;
 
-    icm_get_raw_data(&icm_raw_data);
-    float_to_hex(icm_raw_data.accel_x, host_com_cb.buf + 4);
-    float_to_hex(icm_raw_data.accel_y, host_com_cb.buf + 8);
-    float_to_hex(icm_raw_data.accel_z, host_com_cb.buf + 12);
-    float_to_hex(icm_raw_data.angular_x, host_com_cb.buf + 16);
-    float_to_hex(icm_raw_data.angular_y, host_com_cb.buf + 20);
-    float_to_hex(icm_raw_data.angular_z, host_com_cb.buf + 24);
+    ICM_Raw_Data raw_data = icm_get_raw_data();
+    float_to_hex(raw_data.accel_x, host_com_cb.buf + 4);
+    float_to_hex(raw_data.accel_y, host_com_cb.buf + 8);
+    float_to_hex(raw_data.accel_z, host_com_cb.buf + 12);
+    float_to_hex(raw_data.angular_x, host_com_cb.buf + 16);
+    float_to_hex(raw_data.angular_y, host_com_cb.buf + 20);
+    float_to_hex(raw_data.angular_z, host_com_cb.buf + 24);
 }
 
 void host_com_init(uint8_t* pool, uint16_t buf_len) {
@@ -79,7 +80,6 @@ void host_com_init(uint8_t* pool, uint16_t buf_len) {
 }
 
 bool host_com_parse() {
-    // printf("current state: %d, received: %x\n", host_com_cb.state, data);
     uint8_t data;
     if (!swsr_queue_pop(&host_com_cb.rx_queue, &data))
         return false;
@@ -136,7 +136,7 @@ void host_com_process() {
     LOS_EventRead(&host_com_event,
                   HOST_COM_TX_DONE,
                   LOS_WAITMODE_AND | LOS_WAITMODE_CLR,
-                  100);
+                  500);
     CDC_Transmit_FS(host_com_cb.buf, host_com_cb.buf[2] + 3);
 }
 

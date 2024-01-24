@@ -19,7 +19,7 @@ uint32_t bumper_task_id;
 uint32_t controller_task_id;
 uint32_t kinematics_task_id;
 
-void host_com_task(void) {
+void host_com_task() {
     icm_init();
     host_com_init(mem_pool, 128);
     MX_USB_DEVICE_Init();
@@ -34,7 +34,7 @@ void host_com_task(void) {
     }
 }
 
-void bumper_task(void) {
+void bumper_task() {
     int vel_id = vel_mux_register(0, 200);
     if (vel_id < 0) {
         printf("Register bumper failed\n");
@@ -78,7 +78,7 @@ void bumper_task(void) {
     }
 }
 
-void controller_task(void) {
+void controller_task() {
     int vel_id = vel_mux_register(1, 100);
     if (vel_id < 0) {
         printf("Register controller failed\n");
@@ -126,7 +126,7 @@ void crobot_init() {
     vel_mux_init(mem_pool, 8);
 }
 
-void start_tasks(void) {
+void start_tasks() {
     crobot_init();
 
     // lock the task scheduling

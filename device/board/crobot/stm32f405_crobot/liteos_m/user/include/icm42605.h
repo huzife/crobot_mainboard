@@ -1,6 +1,7 @@
 #ifndef USER_ICM42605_H
 #define USER_ICM42605_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 // registers
@@ -175,10 +176,18 @@ typedef struct {
     volatile float angular_z;
 } ICM_Raw_Data;
 
-extern ICM_Raw_Data icm_raw_data;   // ICM42605 原始数据结构体
+/// @brief Init icm42605
+/// @return bool
+/// @retval true Succeed initializing
+/// @retval false Failed to initialize icm42605
+bool icm_init();
 
-int8_t icm_init(void);
-float icm_get_temperature(void);
-void icm_get_raw_data(ICM_Raw_Data* icm);
+/// @brief Get temperature
+/// @return float
+float icm_get_temperature();
+
+/// @brief Get raw data
+/// @return ICM_Raw_Data
+ICM_Raw_Data icm_get_raw_data();
 
 #endif // USER_ICM42605_H

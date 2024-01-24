@@ -22,6 +22,8 @@ typedef struct {
 } PS2_State;
 
 extern volatile PS2_State ps2_state;
-void ps2_read_data(void);
+
+/// @brief Read ps2 controller data
+void ps2_read_data();
 
 #endif // USER_PS2_H

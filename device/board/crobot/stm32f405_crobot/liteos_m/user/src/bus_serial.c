@@ -42,8 +42,6 @@ bool bus_serial_request(uint16_t id, uint8_t* write_buf, uint16_t write_len,
 
     uint32_t mtx = bus_serial[id].mtx;
     UART_HandleTypeDef* uart = bus_serial[id].huart;
-    GPIO_TypeDef* port = bus_serial[id].txen_port;
-    uint16_t pin = bus_serial[id].txen_pin;
 
     // lock bus
     if (LOS_MuxPend(mtx, 100) != LOS_OK)

@@ -20,9 +20,16 @@ typedef struct {
 
 extern volatile Kinematics_2WD_Param kinematics_param;
 
-void kinematics_2WD_param_init(Kinematics_2WD_Param* param);
+/// @brief Init Kinematics_2WD
+/// @param[out] kinematics Pointer to Kinematics_2WD
 void kinematics_2WD_init(Kinematics_2WD* kinematics);
+
+/// @brief Kinematic 2WD inverse function
+/// @param[in|out] kinematics Pointer to Kinematics_2WD
 void kinematics_2WD_inverse(Kinematics_2WD* kinematics);
+
+/// @brief Kinematic 2WD forward function
+/// @param[in|out] kinematics Pointer to Kinematics_2WD
 void kinematics_2WD_forward(Kinematics_2WD* kinematics);
 
 #endif // USER_KINEMATICS_H
