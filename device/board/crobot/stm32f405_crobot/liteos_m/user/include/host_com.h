@@ -1,6 +1,7 @@
 #ifndef USER_HOST_COM_H
 #define USER_HOST_COM_H
 
+#include "vel_mux.h"
 #include "los_event.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -8,12 +9,13 @@
 #define HOST_COM_TX_DONE 0x01
 
 extern EVENT_CB_S host_com_event;
+extern Velocity_Message host_com_velocity;
 
 // 数据帧功能码
 typedef enum {
     NONE = 0,
     SET_SPEED,
-    GET_SPEED,
+    GET_ODOM,
     GET_IMU_TEMPERATURE,
     GET_IMU_DATA
 } Function_Code;

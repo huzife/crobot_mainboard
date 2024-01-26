@@ -7,9 +7,11 @@
 
 typedef struct {
     uint32_t id;
-    double linear_x;
-    double angular_z;
+    float linear_x;
+    float angular_z;
 } Velocity_Message;
+
+extern volatile int velocity_avaliable;
 
 /// @brief Init vel_mux module
 /// @param[in] mem_pool Address of memory pool

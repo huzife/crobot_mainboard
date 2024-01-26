@@ -1,12 +1,18 @@
 #include "host_com.h"
 #include "icm42605.h"
+#include "kinematics.h"
 #include "swsr_queue.h"
 #include "los_event.h"
 #include "los_memory.h"
 #include "usbd_cdc_if.h"
 #include <stdbool.h>
 
+#define DATA_LEN host_com_cb.buf[2]
+#define FUNCTION host_com_cb.buf[3]
+#define DATA_START (host_com_cb.buf + 4)
+
 EVENT_CB_S host_com_event;
+Velocity_Message host_com_velocity;
 
 typedef enum {
     HOST_COM_RX_HEADER_FE,
@@ -48,24 +54,56 @@ inline static void hex_to_float(uint8_t* hex, float* val) {
     *val = fh.val;
 }
 
-static void get_imu_temperature_func() {
-    host_com_cb.buf[2] = 0x05;
-    host_com_cb.buf[3] = 0x03;
+static bool set_speed_func() {
+    if (DATA_LEN != 9)
+        return false;
 
-    float_to_hex(icm_get_temperature(), host_com_cb.buf + 4);
+    hex_to_float(DATA_START, &host_com_velocity.linear_x);
+    hex_to_float(DATA_START + 4, &host_com_velocity.angular_z);
+    vel_mux_set_velocity(&host_com_velocity);
+    DATA_LEN = 0;
+
+    return true;
 }
 
-static void get_imu_data_func() {
-    host_com_cb.buf[2] = 0x19;
-    host_com_cb.buf[3] = 0x04;
+static bool get_odom_func() {
+    if (DATA_LEN != 1)
+        return false;
 
+    DATA_LEN = 21;
+    float_to_hex(kinematics[1].linear_x, DATA_START);
+    float_to_hex(kinematics[1].angular_z, DATA_START + 4);
+    float_to_hex(odom.position_x, DATA_START + 8);
+    float_to_hex(odom.position_y, DATA_START + 12);
+    float_to_hex(odom.direction, DATA_START + 16);
+
+    return true;
+}
+
+static bool get_imu_temperature_func() {
+    if (DATA_LEN != 1)
+        return false;
+
+    DATA_LEN = 5;
+    float_to_hex(icm_get_temperature(), DATA_START);
+
+    return true;
+}
+
+static bool get_imu_data_func() {
+    if (DATA_LEN != 1)
+        return false;
+
+    DATA_LEN = 25;
     ICM_Raw_Data raw_data = icm_get_raw_data();
-    float_to_hex(raw_data.accel_x, host_com_cb.buf + 4);
-    float_to_hex(raw_data.accel_y, host_com_cb.buf + 8);
-    float_to_hex(raw_data.accel_z, host_com_cb.buf + 12);
-    float_to_hex(raw_data.angular_x, host_com_cb.buf + 16);
-    float_to_hex(raw_data.angular_y, host_com_cb.buf + 20);
-    float_to_hex(raw_data.angular_z, host_com_cb.buf + 24);
+    float_to_hex(raw_data.accel_x, DATA_START);
+    float_to_hex(raw_data.accel_y, DATA_START + 4);
+    float_to_hex(raw_data.accel_z, DATA_START + 8);
+    float_to_hex(raw_data.angular_x, DATA_START + 12);
+    float_to_hex(raw_data.angular_y, DATA_START + 16);
+    float_to_hex(raw_data.angular_z, DATA_START + 20);
+
+    return true;
 }
 
 void host_com_init(uint8_t* pool, uint16_t buf_len) {
@@ -101,12 +139,12 @@ bool host_com_parse() {
             } else {
                 host_com_cb.state = HOST_COM_RX_DATA;
                 host_com_cb.data_len = 0;
-                host_com_cb.buf[2] = data;
+                DATA_LEN = data;
             }
             break;
         case HOST_COM_RX_DATA:
             host_com_cb.buf[3 + host_com_cb.data_len] = data;
-            if (++(host_com_cb.data_len) == host_com_cb.buf[2]) {
+            if (++(host_com_cb.data_len) == DATA_LEN) {
                 host_com_cb.state = HOST_COM_RX_HEADER_FE;
                 return true;
             }
@@ -117,27 +155,36 @@ bool host_com_parse() {
 }
 
 void host_com_process() {
+    bool ret;
     switch ((Function_Code)host_com_cb.buf[3]) {
-        case NONE: break;
+        case NONE:
+            ret = false;
+            break;
 
-        case GET_SPEED: break;
+        case SET_SPEED:
+            ret = set_speed_func();
+            break;
 
-        case SET_SPEED: break;
+        case GET_ODOM:
+            ret = get_odom_func();
+            break;
 
         case GET_IMU_TEMPERATURE:
-            get_imu_temperature_func();
+            ret = get_imu_temperature_func();
             break;
 
         case GET_IMU_DATA:
-            get_imu_data_func();
+            ret = get_imu_data_func();
             break;
     }
 
-    LOS_EventRead(&host_com_event,
-                  HOST_COM_TX_DONE,
-                  LOS_WAITMODE_AND | LOS_WAITMODE_CLR,
-                  500);
-    CDC_Transmit_FS(host_com_cb.buf, host_com_cb.buf[2] + 3);
+    if (ret && DATA_LEN) {
+        LOS_EventRead(&host_com_event,
+                      HOST_COM_TX_DONE,
+                      LOS_WAITMODE_AND | LOS_WAITMODE_CLR,
+                      500);
+        CDC_Transmit_FS(host_com_cb.buf, DATA_LEN + 3);
+    }
 }
 
 void host_rx_callback(uint8_t* buf, uint32_t len) {

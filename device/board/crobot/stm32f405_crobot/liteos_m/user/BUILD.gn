@@ -13,6 +13,9 @@ kernel_module(module_name) {
         "src/swsr_queue.c",
         "src/vel_mux.c"
     ]
+}
+
+config("public") {
     include_dirs = [
         "include"
     ]

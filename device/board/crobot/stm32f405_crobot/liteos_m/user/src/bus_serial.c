@@ -1,5 +1,6 @@
 #include "bus_serial.h"
 #include "los_mux.h"
+#include "los_task.h"
 
 static struct {
     uint32_t mtx;
@@ -40,29 +41,27 @@ bool bus_serial_request(uint16_t id, uint8_t* write_buf, uint16_t write_len,
     if (id >= BUS_NUM || bus_serial[id].huart == NULL)
         return false;
 
-    uint32_t mtx = bus_serial[id].mtx;
     UART_HandleTypeDef* uart = bus_serial[id].huart;
 
     // lock bus
-    if (LOS_MuxPend(mtx, 100) != LOS_OK)
-        return false;
+    LOS_TaskLock();
 
     // write
     start_transmission(id);
     if (HAL_UART_Transmit(uart, write_buf, write_len, timeout) != HAL_OK) {
-        LOS_MuxPost(mtx);
+        LOS_TaskUnlock();
         return false;
     }
     end_transmission(id);
 
     // read
     if (read_len && HAL_UART_Receive(uart, read_buf, read_len, timeout) != HAL_OK) {
-        LOS_MuxPost(mtx);
+        LOS_TaskUnlock();
         return false;
     }
 
-    // unlock ubs
-    LOS_MuxPost(mtx);
+    // unlock bus
+    LOS_TaskUnlock();
 
     return true;
 }
