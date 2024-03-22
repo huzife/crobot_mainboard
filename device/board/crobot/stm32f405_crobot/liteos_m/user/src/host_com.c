@@ -54,13 +54,14 @@ inline static void hex_to_float(uint8_t* hex, float* val) {
     *val = fh.val;
 }
 
-static bool set_speed_func() {
+static bool set_velocity_func() {
     if (DATA_LEN != 9)
         return false;
 
-    hex_to_float(DATA_START, &host_com_velocity.linear_x);
-    hex_to_float(DATA_START + 4, &host_com_velocity.angular_z);
-    vel_mux_set_velocity(&host_com_velocity);
+    hex_to_float(DATA_START, &host_com_velocity.velocity.linear_x);
+    hex_to_float(DATA_START + 4, &host_com_velocity.velocity.linear_y);
+    hex_to_float(DATA_START + 8, &host_com_velocity.velocity.angular_z);
+    vel_mux_set_velocity(host_com_velocity);
     DATA_LEN = 0;
 
     return true;
@@ -71,11 +72,13 @@ static bool get_odom_func() {
         return false;
 
     DATA_LEN = 21;
-    float_to_hex(kinematics[1].linear_x, DATA_START);
-    float_to_hex(kinematics[1].angular_z, DATA_START + 4);
-    float_to_hex(odom.position_x, DATA_START + 8);
-    float_to_hex(odom.position_y, DATA_START + 12);
-    float_to_hex(odom.direction, DATA_START + 16);
+    Velocity velocity = kinematics_get_current_velocity();
+    Odometry odometry = kinematics_get_odom();
+    float_to_hex(velocity.linear_x, DATA_START);
+    float_to_hex(velocity.angular_z, DATA_START + 4);
+    float_to_hex(odometry.position_x, DATA_START + 8);
+    float_to_hex(odometry.position_y, DATA_START + 12);
+    float_to_hex(odometry.direction, DATA_START + 16);
 
     return true;
 }
@@ -161,8 +164,8 @@ void host_com_process() {
             ret = false;
             break;
 
-        case SET_SPEED:
-            ret = set_speed_func();
+        case SET_VELOCITY:
+            ret = set_velocity_func();
             break;
 
         case GET_ODOM:

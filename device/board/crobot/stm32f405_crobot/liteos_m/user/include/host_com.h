@@ -14,7 +14,7 @@ extern Velocity_Message host_com_velocity;
 // 数据帧功能码
 typedef enum {
     NONE = 0,
-    SET_SPEED,
+    SET_VELOCITY,
     GET_ODOM,
     GET_IMU_TEMPERATURE,
     GET_IMU_DATA

@@ -13,6 +13,12 @@ kernel_module(module_name) {
         "src/swsr_queue.c",
         "src/vel_mux.c"
     ]
+
+    if (defined(LOSCFG_ROBOT_BASE_2WD)) {
+        sources += [
+            "src/kinematics_2wd.c"
+        ]
+    }
 }
 
 config("public") {

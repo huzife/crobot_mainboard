@@ -5,6 +5,14 @@ config BOARD_STM32F405_CROBOT
 menu "Device Configuration"
     depends on BOARD_STM32F405_CROBOT
 
+choice ROBOT_BASE_CONFIG
+    prompt "robot base config"
+
+config ROBOT_BASE_2WD
+    bool "two-wheel differential"
+
+endchoice # ROBOT_BASE_CONFIG
+
 choice ICM42605_CONFIG
     prompt "ICM42605 config"
 

@@ -46,33 +46,33 @@ static void bumper_task() {
         return;
     }
 
-    Velocity_Message velocity = {vel_id, 0.0, 0.0};
+    Velocity_Message velocity = {vel_id, {0.0, 0.0, 0.0}};
 
     while (true) {
         Bumper_State state = bumper_check();
         if (state.left || state.front || state.right) {
             if (state.left) {
-                velocity.linear_x -= 0.1;
-                velocity.angular_z -= 0.4;
+                velocity.velocity.linear_x -= 0.1;
+                velocity.velocity.angular_z -= 0.4;
             }
             if (state.front) {
-                velocity.linear_x -= 0.1;
+                velocity.velocity.linear_x -= 0.1;
             }
             if (state.right) {
-                velocity.linear_x -= 0.1;
-                velocity.angular_z += 0.4;
+                velocity.velocity.linear_x -= 0.1;
+                velocity.velocity.angular_z += 0.4;
             }
 
             // set velocity
             for (int i = 0; i < 20; i++) {
-                vel_mux_set_velocity(&velocity);
+                vel_mux_set_velocity(velocity);
                 LOS_TaskDelay(100);
             }
 
             // stop
-            velocity.linear_x = 0.0;
-            velocity.angular_z = 0.0;
-            vel_mux_set_velocity(&velocity);
+            velocity.velocity.linear_x = 0.0;
+            velocity.velocity.angular_z = 0.0;
+            vel_mux_set_velocity(velocity);
         }
 
         LOS_TaskDelay(10);
@@ -86,23 +86,20 @@ static void controller_task() {
         return;
     }
 
-    Velocity_Message velocity = {vel_id, 0.0, 0.0};
+    Velocity_Message velocity = {vel_id, {0.0, 0.0, 0.0}};
 
     while (true) {
         ps2_read_data();
         if (ps2_state.Mode) {
-            velocity.linear_x = 0.3 * ps2_state.Rocker_LY / 128;
-            velocity.angular_z = -1.0 * ps2_state.Rocker_RX / 128;
-            vel_mux_set_velocity(&velocity);
+            velocity.velocity.linear_x = 0.3 * ps2_state.Rocker_LY / 128;
+            velocity.velocity.angular_z = -1.0 * ps2_state.Rocker_RX / 128;
+            vel_mux_set_velocity(velocity);
         }
         LOS_TaskDelay(50);
     }
 }
 
 static void kinematics_task() {
-    kinematics_2WD_init(&kinematics[0]);
-    kinematics_2WD_init(&kinematics[1]);
-    odom_init(&odom);
     HAL_TIM_Base_Start_IT(&htim7);
 
     while (true) {
@@ -111,20 +108,18 @@ static void kinematics_task() {
         __HAL_TIM_SET_COUNTER(&htim7, 0);
 
         // get current speed
-        uint16_t read_buf[4];
-        if (modbus_rtu_get_input_regs(0, 1, 0, 4, read_buf)) {
-            kinematics[1].speed[0] = read_buf[1];
-            kinematics[1].speed[1] = read_buf[3];
-            kinematics_2WD_forward(&kinematics[1]);
-            update_odom(&odom, kinematics[1].linear_x,
-                        kinematics[1].angular_z, interval);
+        uint16_t read_buf[MOTOR_NUM];
+        if (modbus_rtu_get_input_regs(0, 1, 0, MOTOR_NUM, read_buf)) {
+            kinematics_set_current_motor_speed(read_buf);
+            kinematics_forward();
+            kinematics_update_odom(interval);
         }
 
         // set velocity if there is any velocity message avaliable
         if (!LOS_AtomicCmpXchg32bits(&velocity_avaliable, 0, 1)) {
-            kinematics_2WD_inverse(&kinematics[0]);
+            kinematics_inverse();
             modbus_rtu_set_holding_regs(
-                0, 1, 0, (uint16_t*)kinematics[0].speed, 2);
+                0, 1, 0, kinematics_get_target_motor_speed(), MOTOR_NUM);
         }
 
         LOS_TaskDelay(50);

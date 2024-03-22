@@ -57,8 +57,8 @@ int vel_mux_register(uint32_t priority, uint16_t expiry_time) {
     return index;
 }
 
-void vel_mux_set_velocity(Velocity_Message* velocity) {
-    uint32_t id = velocity->id;
+void vel_mux_set_velocity(Velocity_Message velocity) {
+    uint32_t id = velocity.id;
     if (id >= vel_mux_cb.count)
         return;
 
@@ -75,8 +75,7 @@ void vel_mux_set_velocity(Velocity_Message* velocity) {
             vel_mux_cb.active_id = id;
 
         // set velocity
-        kinematics[0].linear_x = velocity->linear_x;
-        kinematics[0].angular_z = velocity->angular_z;
+        kinematics_set_target_velocity(velocity.velocity);
         LOS_AtomicSet(&velocity_avaliable, 1);
     }
     LOS_MuxPost(vel_mux_cb.set_vel_mtx);
