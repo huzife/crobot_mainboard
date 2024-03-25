@@ -88,7 +88,7 @@ static bool get_imu_temperature_func() {
         return false;
 
     DATA_LEN = 5;
-    float_to_hex(icm_get_temperature(), DATA_START);
+    float_to_hex(icm42605_get_temperature(), DATA_START);
 
     return true;
 }
@@ -98,13 +98,13 @@ static bool get_imu_data_func() {
         return false;
 
     DATA_LEN = 25;
-    ICM_Raw_Data raw_data = icm_get_raw_data();
-    float_to_hex(raw_data.accel_x, DATA_START);
-    float_to_hex(raw_data.accel_y, DATA_START + 4);
-    float_to_hex(raw_data.accel_z, DATA_START + 8);
-    float_to_hex(raw_data.angular_x, DATA_START + 12);
-    float_to_hex(raw_data.angular_y, DATA_START + 16);
-    float_to_hex(raw_data.angular_z, DATA_START + 20);
+    IMU_Data imu_data = icm42605_get_data();
+    float_to_hex(imu_data.accel_x, DATA_START);
+    float_to_hex(imu_data.accel_y, DATA_START + 4);
+    float_to_hex(imu_data.accel_z, DATA_START + 8);
+    float_to_hex(imu_data.angular_x, DATA_START + 12);
+    float_to_hex(imu_data.angular_y, DATA_START + 16);
+    float_to_hex(imu_data.angular_z, DATA_START + 20);
 
     return true;
 }

@@ -5,12 +5,16 @@
 #include <stdint.h>
 
 #if defined LOSCFG_ROBOT_BASE_2WD
-#define MOTOR_NUM 2
+#define WHEEL_NUM 2
+#elif defined LOSCFG_ROBOT_BASE_4WD
+#define WHEEL_NUM 4
+#elif defined LOSCFG_ROBOT_BASE_3WO
+#define WHEEL_NUM 3
 #endif
 
 typedef struct {
     Velocity velocity;
-    uint16_t speed[MOTOR_NUM];
+    uint16_t speed[WHEEL_NUM];
 } Kinematics;
 
 typedef struct {

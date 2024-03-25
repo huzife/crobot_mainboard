@@ -11,6 +11,12 @@ choice ROBOT_BASE_CONFIG
 config ROBOT_BASE_2WD
     bool "two-wheel differential"
 
+config ROBOT_BASE_4WD
+    bool "four-wheel differential"
+
+config ROBOT_BASE_3WO
+    bool "three-wheel omnidirectional"
+
 endchoice # ROBOT_BASE_CONFIG
 
 choice ICM42605_CONFIG

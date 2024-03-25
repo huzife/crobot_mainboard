@@ -5,46 +5,55 @@ static float accel_sensitivity = 0.244f;  //加速度的最小分辨率 mg/LSB
 static float gyro_sensitivity = 32.8f;  //陀螺仪的最小分辨率
 
 #if defined LOSCFG_ICM42605_USE_HARD_SPI
-
 #include "spi.h"
-#define ICM42605_MODE 0x02
-#define ICM_CS_LOW() HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET)
-#define ICM_CS_HIGH() HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET)
-
+#define ICM42605_CS_LOW() HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET)
+#define ICM42605_CS_HIGH() HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET)
 #elif defined LOSCFG_ICM42605_USE_HARD_I2C
-
 #include "i2c.h"
-#define ICM42605_MODE 0x00
-
 #endif
 
-void icm_read_regs(uint8_t reg, uint8_t* buf, uint16_t len) {
+static uint8_t read_reg(uint8_t reg) {
+    uint8_t val;
 #if defined LOSCFG_ICM42605_USE_HARD_SPI
     uint8_t first_bit = reg | 0x80;
 
-    ICM_CS_LOW();
+    ICM42605_CS_LOW();
+    HAL_SPI_Transmit(&hspi2, &first_bit, 1, 10);
+    HAL_SPI_Receive(&hspi2, &val, 1, 10);
+    ICM42605_CS_HIGH();
+#elif defined LOSCFG_ICM42605_USE_HARD_I2C
+    HAL_I2C_Mem_Read(&hi2c1, ICM42605_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, &val, 1, 10);
+#endif
+    return val;
+}
+
+static void read_regs(uint8_t reg, uint8_t* buf, uint16_t len) {
+#if defined LOSCFG_ICM42605_USE_HARD_SPI
+    uint8_t first_bit = reg | 0x80;
+
+    ICM42605_CS_LOW();
     HAL_SPI_Transmit(&hspi2, &first_bit, 1, 10);
     HAL_SPI_Receive(&hspi2, buf, len, 100);
-    ICM_CS_HIGH();
+    ICM42605_CS_HIGH();
 #elif defined LOSCFG_ICM42605_USE_HARD_I2C
-    HAL_I2C_Mem_Read(&hi2c1, ICM_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, buf, len, 100);
+    HAL_I2C_Mem_Read(&hi2c1, ICM42605_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, buf, len, 100);
 #endif
 }
 
-void icm_write_reg(uint8_t reg, uint8_t data) {
+static void write_reg(uint8_t reg, uint8_t data) {
 #if defined LOSCFG_ICM42605_USE_HARD_SPI
     uint8_t first_bit = reg & 0x7f; // 写寄存器时，第一个字节第一位为0
 
-    ICM_CS_LOW();
+    ICM42605_CS_LOW();
     HAL_SPI_Transmit(&hspi2, &first_bit, 1, 10);
     HAL_SPI_Transmit(&hspi2, &data, 1, 10);
-    ICM_CS_HIGH();
+    ICM42605_CS_HIGH();
 #elif defined LOSCFG_ICM42605_USE_HARD_I2C
-    HAL_I2C_Mem_Write(&hi2c1, ICM_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, 10);
+    HAL_I2C_Mem_Write(&hi2c1, ICM42605_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, 10);
 #endif
 }
 
-float icm_set_ares(uint8_t scale) {
+static void set_ares(uint8_t scale) {
     switch(scale) {
     // Possible accelerometer scales (and their register bit settings) are:
     // 2 Gs (00), 4 Gs (01), 8 Gs (10), and 16 Gs  (11).
@@ -61,11 +70,9 @@ float icm_set_ares(uint8_t scale) {
         accel_sensitivity = 16.0f / 32768.0f;
         break;
     }
-
-    return accel_sensitivity;
 }
 
-float icm_set_gres(uint8_t scale) {
+static void set_gres(uint8_t scale) {
     switch(scale) {
     case GFS_15_125DPS:
         gyro_sensitivity = 15.125f / 32768.0f;
@@ -92,78 +99,60 @@ float icm_set_gres(uint8_t scale) {
         gyro_sensitivity = 2000.0f / 32768.0f;
         break;
     }
-
-    return gyro_sensitivity;
 }
 
-bool icm_init() {
-    uint8_t reg_val = 0;
-    icm_read_regs(ICM_WHO_AM_I, &reg_val, 1);
-
-    if (reg_val != ICM42605_ID)
-        return -1;
-
-    icm_write_reg(ICM_REG_BANK_SEL, 0); //设置bank 0区域寄存器
-    icm_write_reg(ICM_REG_BANK_SEL, 0x01); //软复位传感器
+bool icm42605_init() {
+    // reset
+    write_reg(ICM42605_REG_BANK_SEL, 0);
+    write_reg(ICM42605_DEVICE_CONFIG, 0x01);
     LOS_TaskDelay(100);
 
-    icm_write_reg(ICM_REG_BANK_SEL, 1); //设置bank 1区域寄存器
-    icm_write_reg(ICM_INTF_CONFIG4, ICM42605_MODE);
-    icm_write_reg(ICM_REG_BANK_SEL, 0); //设置bank 0区域寄存器
-    icm_write_reg(ICM_FIFO_CONFIG, 0x40); //Stream-to-FIFO Mode(page61)
+    // select bank 0
+    write_reg(ICM42605_REG_BANK_SEL, 0);
 
-    icm_read_regs(ICM_INT_SOURCE0, &reg_val, 1);
-    icm_write_reg(ICM_INT_SOURCE0, 0x00);
-    icm_write_reg(ICM_FIFO_CONFIG2, 0x00); // watermark
-    icm_write_reg(ICM_FIFO_CONFIG3, 0x02); // watermark
-    icm_write_reg(ICM_INT_SOURCE0, reg_val);
-    icm_write_reg(ICM_FIFO_CONFIG1, 0x63); // Enable the accel and gyro to the FIFO
+    // check device ID
+    uint8_t val = read_reg(ICM42605_WHO_AM_I);
+    read_regs(ICM42605_WHO_AM_I, &val, 1);
+    if (val != ICM42605_ID)
+        return false;
 
-    icm_write_reg(ICM_REG_BANK_SEL, 0x00);
-    icm_write_reg(ICM_INT_CONFIG, 0x36);
+    // enable gyro and accel in low noise mode, enable temperature measurement
+    val = read_reg(ICM42605_PWR_MGMT0);
+    val &= ~(1 << 5); // temperature
+    val |= 3; // accel mode
+    val |= (3 << 2); // gyro mode
+    write_reg(ICM42605_PWR_MGMT0, val);
+    LOS_TaskDelay(1); // do not issue any register wirtes for 200us after change accel and gyro mode
 
-    icm_write_reg(ICM_REG_BANK_SEL, 0x00);
-    icm_read_regs(ICM_INT_SOURCE0, &reg_val, 1);
-    reg_val |= (1 << 2); //FIFO_THS_INT1_ENABLE
-    icm_write_reg(ICM_INT_SOURCE0, reg_val);
+    // set accel scale and data rate
+    set_ares(AFS_8G);
+    val = read_reg(ICM42605_ACCEL_CONFIG0);
+    write_reg(ICM42605_ACCEL_CONFIG0, val | AODR_200Hz | (AFS_8G << 5));
 
-    icm_set_ares(AFS_8G);
-    icm_write_reg(ICM_REG_BANK_SEL, 0x00);
-    icm_read_regs(ICM_ACCEL_CONFIG0, &reg_val, 1);//page74
-    reg_val |= (AFS_8G << 5);   //量程 ±8g
-    reg_val |= (AODR_50Hz);     //输出速率 50HZ
-    icm_write_reg(ICM_ACCEL_CONFIG0, reg_val);
+    // set gyro scale and data rate
+    set_gres(GFS_500DPS);
+    val = read_reg(ICM42605_GYRO_CONFIG0);
+    write_reg(ICM42605_GYRO_CONFIG0, val | GODR_200Hz | (GFS_500DPS << 5));
 
-    icm_set_gres(GFS_1000DPS);
-    icm_write_reg(ICM_REG_BANK_SEL, 0x00);
-    icm_read_regs(ICM_GYRO_CONFIG0, &reg_val, 1);//page73
-    reg_val |= (GFS_1000DPS << 5);   //量程 ±1000dps
-    reg_val |= (GODR_50Hz);     //输出速率 50HZ
-    icm_write_reg(ICM_GYRO_CONFIG0, reg_val);
+    // set temperature filter bandwidth and order of gyro UI filter
+    val = read_reg(ICM42605_GYRO_CONFIG1);
+    write_reg(ICM42605_GYRO_CONFIG1, val | 0xD0);
 
-    icm_write_reg(ICM_REG_BANK_SEL, 0x00);
-    icm_read_regs(ICM_PWR_MGMT0, &reg_val, 1); //读取PWR—MGMT0当前寄存器的值(page72)
-    reg_val &= ~(1 << 5);//使能温度测量
-    reg_val |= ((3) << 2);//设置GYRO_MODE  0:关闭 1:待机 2:预留 3:低噪声
-    reg_val |= (3);//设置ACCEL_MODE 0:关闭 1:关闭 2:低功耗 3:低噪声
-    icm_write_reg(ICM_PWR_MGMT0, reg_val);
-    LOS_UDelay(200); //操作完PWR—MGMT0寄存器后 200us内不能有任何读写寄存器的操作
-
-    return 0;
+    return true;
 }
 
-float icm_get_temperature() {
+float icm42605_get_temperature() {
     uint8_t buf[2] = {0};
-    icm_read_regs(ICM_TEMP_DATA1, buf, 2);
+    read_regs(ICM42605_TEMP_DATA1, buf, 2);
 
     return (int16_t)((buf[0] << 8) | buf[1]) / 132.48 + 25;
 }
 
-ICM_Raw_Data icm_get_raw_data() {
+IMU_Data icm42605_get_data() {
     uint8_t buf[12] = {0};
-    icm_read_regs(ICM_ACCEL_DATA_X1, buf, 12);
+    read_regs(ICM42605_ACCEL_DATA_X1, buf, 12);
 
-    ICM_Raw_Data raw_data;
+    IMU_Data raw_data;
     raw_data.accel_x = (int16_t)((buf[0] << 8) | buf[1]) * accel_sensitivity;
     raw_data.accel_y = (int16_t)((buf[2] << 8) | buf[3]) * accel_sensitivity;
     raw_data.accel_z = (int16_t)((buf[4] << 8) | buf[5]) * accel_sensitivity;

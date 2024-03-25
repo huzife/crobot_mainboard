@@ -19,6 +19,18 @@ kernel_module(module_name) {
             "src/kinematics_2wd.c"
         ]
     }
+
+    if (defined(LOSCFG_ROBOT_BASE_4WD)) {
+        sources += [
+            "src/kinematics_4wd.c"
+        ]
+    }
+
+    if (defined(LOSCFG_ROBOT_BASE_3WO)) {
+        sources += [
+            "src/kinematics_3wo.c"
+        ]
+    }
 }
 
 config("public") {

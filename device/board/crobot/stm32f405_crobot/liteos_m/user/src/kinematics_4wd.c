@@ -25,15 +25,19 @@ void kinematics_inverse() {
 
     // motor speed(count in an interval time)
     double factor = pid_interval * CPR / (2 * M_PI);
-    k_inverse.speed[0] = speed_right * factor;
-    k_inverse.speed[1] = speed_left * factor;
+    k_inverse.speed[0] = speed_left * factor;
+    k_inverse.speed[1] = speed_right * factor;
+    k_inverse.speed[2] = k_inverse.speed[0];
+    k_inverse.speed[3] = k_inverse.speed[1];
 }
 
 void kinematics_forward() {
     // rotate speed
     double factor = pid_interval * CPR / (2 * M_PI);
-    double speed_left = (double)k_forward.speed[1] / factor;
-    double speed_right = (double)k_forward.speed[0] / factor;
+    double speed_left =
+        ((double)k_forward.speed[0] + (double)k_forward.speed[2]) / 2 / factor;
+    double speed_right =
+        ((double)k_forward.speed[1] + (double)k_forward.speed[3]) / 2 / factor;
 
     // linear and angular
     double linear = (RADIUS * (speed_right - speed_left)) / 2;

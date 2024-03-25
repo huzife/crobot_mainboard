@@ -24,7 +24,7 @@ static uint32_t controller_task_id;
 static uint32_t kinematics_task_id;
 
 static void host_com_task() {
-    icm_init();
+    icm42605_init();
     host_com_init(mem_pool, 128);
     MX_USB_DEVICE_Init();
     LOS_EventInit(&host_com_event);
@@ -108,8 +108,8 @@ static void kinematics_task() {
         __HAL_TIM_SET_COUNTER(&htim7, 0);
 
         // get current speed
-        uint16_t read_buf[MOTOR_NUM];
-        if (modbus_rtu_get_input_regs(0, 1, 0, MOTOR_NUM, read_buf)) {
+        uint16_t read_buf[WHEEL_NUM];
+        if (modbus_rtu_get_input_regs(0, 1, 0, WHEEL_NUM, read_buf)) {
             kinematics_set_current_motor_speed(read_buf);
             kinematics_forward();
             kinematics_update_odom(interval);
@@ -119,7 +119,7 @@ static void kinematics_task() {
         if (!LOS_AtomicCmpXchg32bits(&velocity_avaliable, 0, 1)) {
             kinematics_inverse();
             modbus_rtu_set_holding_regs(
-                0, 1, 0, kinematics_get_target_motor_speed(), MOTOR_NUM);
+                0, 1, 0, kinematics_get_target_motor_speed(), WHEEL_NUM);
         }
 
         LOS_TaskDelay(50);

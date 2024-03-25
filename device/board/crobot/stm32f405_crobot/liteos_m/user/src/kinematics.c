@@ -34,7 +34,7 @@ Velocity kinematics_get_current_velocity() {
 }
 
 void kinematics_set_current_motor_speed(uint16_t* speeds) {
-    for (int i = 0; i < MOTOR_NUM; i++) {
+    for (int i = 0; i < WHEEL_NUM; i++) {
         k_forward.speed[i] = speeds[i];
     }
 }
