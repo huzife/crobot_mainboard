@@ -4,7 +4,7 @@
 #include "usart.h"
 #include <stdbool.h>
 
-#define BUS_NUM 1
+#define BUS_NUM 3
 
 /// @brief Init bus serial by id
 /// @param[in] id Bus id

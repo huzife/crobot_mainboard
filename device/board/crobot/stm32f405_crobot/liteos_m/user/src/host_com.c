@@ -1,9 +1,11 @@
 #include "host_com.h"
 #include "icm42605.h"
 #include "kinematics.h"
+#include "modbus_rtu.h"
 #include "swsr_queue.h"
 #include "los_event.h"
 #include "los_memory.h"
+#include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include <stdbool.h>
 
@@ -109,15 +111,31 @@ static bool get_imu_data_func() {
     return true;
 }
 
+static bool get_ultrasonic_range_func() {
+    if (DATA_LEN != 1)
+        return false;
+
+    DATA_LEN = 3;
+    uint16_t range;
+    if (!modbus_rtu_get_input_regs(1, 1, 0, 1, &range))
+        return false;
+
+    *(DATA_START) = range >> 8;
+    *(DATA_START + 1) = range & 0xFF;
+
+    return true;
+}
+
 void host_com_init(uint8_t* pool, uint16_t buf_len) {
     host_com_cb.state = HOST_COM_RX_HEADER_FE;
     host_com_cb.buf = (uint8_t*)LOS_MemAlloc(pool, buf_len);
     host_com_cb.buf_len = buf_len;
     host_com_cb.data_len = 0;
-    swsr_queue_init(&host_com_cb.rx_queue, pool, 2 * buf_len);
-
     host_com_cb.buf[0] = 0xFE;
     host_com_cb.buf[1] = 0xEF;
+    swsr_queue_init(&host_com_cb.rx_queue, pool, 2 * buf_len);
+
+    MX_USB_DEVICE_Init();
 }
 
 bool host_com_parse() {
@@ -178,6 +196,10 @@ void host_com_process() {
 
         case GET_IMU_DATA:
             ret = get_imu_data_func();
+            break;
+
+        case GET_ULTRASONIC_RANGE:
+            ret = get_ultrasonic_range_func();
             break;
     }
 

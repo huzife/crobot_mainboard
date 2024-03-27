@@ -11,7 +11,6 @@
 #include "los_event.h"
 #include "los_memory.h"
 #include "los_task.h"
-#include "usb_device.h"
 #include "tim.h"
 #include <stdbool.h>
 
@@ -26,7 +25,6 @@ static uint32_t kinematics_task_id;
 static void host_com_task() {
     icm42605_init();
     host_com_init(mem_pool, 128);
-    MX_USB_DEVICE_Init();
     LOS_EventInit(&host_com_event);
     LOS_EventWrite(&host_com_event, HOST_COM_TX_DONE);
     host_com_velocity.id = vel_mux_register(5, 100);
@@ -100,6 +98,15 @@ static void controller_task() {
 }
 
 static void kinematics_task() {
+    uint16_t proto_rev;
+    if (!modbus_rtu_get_input_regs(0, 1, 0xFF, 1, &proto_rev)) {
+        printf("Failed to read protocol revision\n");
+        return;
+    } else if (proto_rev < 3) {
+        printf("Protocol revision too low\n");
+        return;
+    }
+
     HAL_TIM_Base_Start_IT(&htim7);
 
     while (true) {
@@ -150,6 +157,7 @@ static void crobot_init() {
     // Initialize resources that are used by multiple tasks
     LOS_MemInit(mem_pool, MEMORY_POOL_SIZE);
     bus_serial_init(0, &huart5, NULL, 0);
+    bus_serial_init(1, &huart4, GPIOA, GPIO_PIN_15);
     vel_mux_init(mem_pool, 8);
 }
 

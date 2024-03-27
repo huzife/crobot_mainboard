@@ -17,7 +17,8 @@ typedef enum {
     SET_VELOCITY,
     GET_ODOM,
     GET_IMU_TEMPERATURE,
-    GET_IMU_DATA
+    GET_IMU_DATA,
+    GET_ULTRASONIC_RANGE
 } Function_Code;
 
 /// @brief Init host com module
