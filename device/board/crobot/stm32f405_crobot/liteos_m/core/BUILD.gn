@@ -5,15 +5,12 @@ kernel_module(module_name) {
         "startup_stm32f405xx.s",
         "src/dprintf.c",
         "src/gpio.c",
-        "src/i2c.c",
         "src/main.c",
-        "src/spi.c",
+        "src/print.c",
         "src/stm32f4xx_hal_msp.c",
         "src/stm32f4xx_hal_timebase_tim.c",
         "src/stm32f4xx_it.c",
-        "src/system_stm32f4xx.c",
-        "src/tim.c",
-        "src/usart.c"
+        "src/system_stm32f4xx.c"
     ]
 }
 

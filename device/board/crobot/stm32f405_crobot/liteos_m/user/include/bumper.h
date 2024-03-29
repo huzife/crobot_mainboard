@@ -9,6 +9,9 @@ typedef struct {
     bool right; // true: hit right
 } Bumper_State;
 
+/// @brief Init bumper
+void bumper_init();
+
 /// @brief Check bumper state
 /// @return Bumper_State
 Bumper_State bumper_check();

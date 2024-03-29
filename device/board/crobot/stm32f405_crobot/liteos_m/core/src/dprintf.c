@@ -797,7 +797,7 @@ static int _vsnprintf(out_fct_type out, char* buffer, const int maxlen, const ch
 
       case 's' : {
         const char* p = va_arg(va, char*);
-        if (!p) p = '(null)';
+        if (!p) p = "(null)";
         unsigned int l = _strnlen_s(p, precision ? precision : (int)-1);
         // pre padding
         if (flags & FLAGS_PRECISION) {

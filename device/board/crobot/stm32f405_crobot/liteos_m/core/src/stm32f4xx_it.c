@@ -58,7 +58,7 @@
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim6;
-extern TIM_HandleTypeDef htim7;
+extern TIM_HandleTypeDef kinematics_tim;
 
 /* USER CODE BEGIN EV */
 
@@ -226,7 +226,7 @@ void TIM7_IRQHandler(void)
   /* USER CODE BEGIN TIM7_IRQn 0 */
 
   /* USER CODE END TIM7_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim7);
+  HAL_TIM_IRQHandler(&kinematics_tim);
   /* USER CODE BEGIN TIM7_IRQn 1 */
 
   /* USER CODE END TIM7_IRQn 1 */

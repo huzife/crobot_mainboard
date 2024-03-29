@@ -23,7 +23,9 @@ typedef struct {
     float direction;
 } Odometry;
 
-void kinematics_update_odom(float interval);
+void kinematics_init();
+
+void kinematics_update_odom();
 Odometry kinematics_get_odom();
 
 void kinematics_set_target_velocity(Velocity velocity);

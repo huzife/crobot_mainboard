@@ -4,14 +4,14 @@
 #include "host_com.h"
 #include "icm42605.h"
 #include "kinematics.h"
-#include "los_atomic.h"
 #include "modbus_rtu.h"
 #include "ps2.h"
 #include "vel_mux.h"
+#include "print.h"
+#include "los_atomic.h"
 #include "los_event.h"
 #include "los_memory.h"
 #include "los_task.h"
-#include "tim.h"
 #include <stdbool.h>
 
 #define MEMORY_POOL_SIZE 2048
@@ -40,9 +40,11 @@ static void host_com_task() {
 static void bumper_task() {
     int vel_id = vel_mux_register(0, 200);
     if (vel_id < 0) {
-        printf("Register bumper failed\n");
+        PRINT("Register bumper failed\n");
         return;
     }
+
+    bumper_init();
 
     Velocity_Message velocity = {vel_id, {0.0, 0.0, 0.0}};
 
@@ -78,9 +80,10 @@ static void bumper_task() {
 }
 
 static void controller_task() {
+    ps2_init();
     int vel_id = vel_mux_register(1, 100);
     if (vel_id < 0) {
-        printf("Register controller failed\n");
+        PRINT("Register controller failed\n");
         return;
     }
 
@@ -100,26 +103,22 @@ static void controller_task() {
 static void kinematics_task() {
     uint16_t proto_rev;
     if (!modbus_rtu_get_input_regs(0, 1, 0xFF, 1, &proto_rev)) {
-        printf("Failed to read protocol revision\n");
+        PRINT("Failed to read protocol revision\n");
         return;
     } else if (proto_rev < 3) {
-        printf("Protocol revision too low\n");
+        PRINT("Protocol revision too low\n");
         return;
     }
 
-    HAL_TIM_Base_Start_IT(&htim7);
+    kinematics_init();
 
     while (true) {
-        // get interval, reset counter
-        float interval = __HAL_TIM_GET_COUNTER(&htim7) / 10000.0;
-        __HAL_TIM_SET_COUNTER(&htim7, 0);
-
         // get current speed
         uint16_t read_buf[WHEEL_NUM];
         if (modbus_rtu_get_input_regs(0, 1, 0, WHEEL_NUM, read_buf)) {
             kinematics_set_current_motor_speed(read_buf);
             kinematics_forward();
-            kinematics_update_odom(interval);
+            kinematics_update_odom();
         }
 
         // set velocity if there is any velocity message avaliable
@@ -146,9 +145,9 @@ static void create_task(uint32_t* task_id,
 
     uint32_t ret = LOS_TaskCreate(task_id, &init_param);
     if (ret != LOS_OK)
-        printf("%s create failed, return code: %d\n", name, ret);
+        PRINT("%s create failed, return code: %d\n", name, ret);
     else
-        printf("%s create success\n", name);
+        PRINT("%s create success\n", name);
 }
 
 static void crobot_init() {
@@ -156,8 +155,7 @@ static void crobot_init() {
 
     // Initialize resources that are used by multiple tasks
     LOS_MemInit(mem_pool, MEMORY_POOL_SIZE);
-    bus_serial_init(0, &huart5, NULL, 0);
-    bus_serial_init(1, &huart4, GPIOA, GPIO_PIN_15);
+    bus_serial_init();
     vel_mux_init(mem_pool, 8);
 }
 
@@ -172,8 +170,8 @@ void start_tasks() {
                 "host_com_task", 6, 0x1000);
     create_task(&bumper_task_id, (TSK_ENTRY_FUNC)bumper_task,
                 "bumper_task", 6, 0x1000);
-    // create_task(&controller_task_id, (TSK_ENTRY_FUNC)controller_task,
-    //             "controller_task", 6, 0x1000);
+    create_task(&controller_task_id, (TSK_ENTRY_FUNC)controller_task,
+                "controller_task", 6, 0x1000);
     create_task(&kinematics_task_id, (TSK_ENTRY_FUNC)kinematics_task,
                 "kinematics_task", 6, 0x1000);
 

@@ -1,16 +1,42 @@
 #include "icm42605.h"
 #include "los_task.h"
-
-static float accel_sensitivity = 0.244f;  //加速度的最小分辨率 mg/LSB
-static float gyro_sensitivity = 32.8f;  //陀螺仪的最小分辨率
+#include "main.h"
 
 #if defined LOSCFG_ICM42605_USE_HARD_SPI
 #include "spi.h"
 #define ICM42605_CS_LOW() HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET)
 #define ICM42605_CS_HIGH() HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET)
 #elif defined LOSCFG_ICM42605_USE_HARD_I2C
-#include "i2c.h"
+static I2C_HandleTypeDef icm42605_i2c;
+static void icm42605_setup() {
+    // msp init
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_7;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    __HAL_RCC_I2C1_CLK_ENABLE();
+
+    // hal i2c init
+    icm42605_i2c.Instance = I2C1;
+    icm42605_i2c.Init.ClockSpeed = 100000;
+    icm42605_i2c.Init.DutyCycle = I2C_DUTYCYCLE_2;
+    icm42605_i2c.Init.OwnAddress1 = 0;
+    icm42605_i2c.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    icm42605_i2c.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+    icm42605_i2c.Init.OwnAddress2 = 0;
+    icm42605_i2c.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+    icm42605_i2c.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+    if (HAL_I2C_Init(&icm42605_i2c) != HAL_OK)
+        Error_Handler();
+}
 #endif
+
+static float accel_sensitivity;
+static float gyro_sensitivity;
 
 static uint8_t read_reg(uint8_t reg) {
     uint8_t val;
@@ -22,7 +48,7 @@ static uint8_t read_reg(uint8_t reg) {
     HAL_SPI_Receive(&hspi2, &val, 1, 10);
     ICM42605_CS_HIGH();
 #elif defined LOSCFG_ICM42605_USE_HARD_I2C
-    HAL_I2C_Mem_Read(&hi2c1, ICM42605_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, &val, 1, 10);
+    HAL_I2C_Mem_Read(&icm42605_i2c, ICM42605_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, &val, 1, 10);
 #endif
     return val;
 }
@@ -36,7 +62,7 @@ static void read_regs(uint8_t reg, uint8_t* buf, uint16_t len) {
     HAL_SPI_Receive(&hspi2, buf, len, 100);
     ICM42605_CS_HIGH();
 #elif defined LOSCFG_ICM42605_USE_HARD_I2C
-    HAL_I2C_Mem_Read(&hi2c1, ICM42605_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, buf, len, 100);
+    HAL_I2C_Mem_Read(&icm42605_i2c, ICM42605_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, buf, len, 100);
 #endif
 }
 
@@ -49,7 +75,7 @@ static void write_reg(uint8_t reg, uint8_t data) {
     HAL_SPI_Transmit(&hspi2, &data, 1, 10);
     ICM42605_CS_HIGH();
 #elif defined LOSCFG_ICM42605_USE_HARD_I2C
-    HAL_I2C_Mem_Write(&hi2c1, ICM42605_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, 10);
+    HAL_I2C_Mem_Write(&icm42605_i2c, ICM42605_ADDRESS << 1, reg, I2C_MEMADD_SIZE_8BIT, &data, 1, 10);
 #endif
 }
 
@@ -102,6 +128,8 @@ static void set_gres(uint8_t scale) {
 }
 
 bool icm42605_init() {
+    icm42605_setup();
+
     // reset
     write_reg(ICM42605_REG_BANK_SEL, 0);
     write_reg(ICM42605_DEVICE_CONFIG, 0x01);

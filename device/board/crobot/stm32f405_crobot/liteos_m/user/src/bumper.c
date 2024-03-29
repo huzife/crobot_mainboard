@@ -1,5 +1,5 @@
 #include "bumper.h"
-#include "gpio.h"
+#include "main.h"
 
 #define BUMPER_LEFT_MASK (1 << 0)
 #define BUMPER_FRONT_MASK (1 << 1)
@@ -10,6 +10,15 @@
 #define BUMPER_HIT_RIGHT() !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4)
 
 static uint8_t state = 0;
+
+void bumper_init() {
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_4|GPIO_PIN_5;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+}
 
 Bumper_State bumper_check() {
     Bumper_State bumper_state;

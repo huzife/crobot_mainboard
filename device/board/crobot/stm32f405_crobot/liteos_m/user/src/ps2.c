@@ -1,5 +1,5 @@
 #include "ps2.h"
-#include "spi.h"
+#include "main.h"
 #include "los_tick.h"
 
 #define PS2_CS_LOW() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET)
@@ -11,6 +11,44 @@
 #define PS2_DO_LOW() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET)
 #define PS2_DO_HIGH() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET)
 #define PS2_READ_DI() HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6)
+#elif defined LOSCFG_PS2_USE_HARD_SPI
+static SPI_HandleTypeDef ps2_spi;
+
+static void ps2_setup() {
+    // msp init
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    __HAL_RCC_SPI1_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+    GPIO_InitStruct.Pin = GPIO_PIN_4;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    // hal spi init
+    ps2_spi.Instance = SPI1;
+    ps2_spi.Init.Mode = SPI_MODE_MASTER;
+    ps2_spi.Init.Direction = SPI_DIRECTION_2LINES;
+    ps2_spi.Init.DataSize = SPI_DATASIZE_8BIT;
+    ps2_spi.Init.CLKPolarity = SPI_POLARITY_HIGH;
+    ps2_spi.Init.CLKPhase = SPI_PHASE_1EDGE;
+    ps2_spi.Init.NSS = SPI_NSS_SOFT;
+    ps2_spi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+    ps2_spi.Init.FirstBit = SPI_FIRSTBIT_LSB;
+    ps2_spi.Init.TIMode = SPI_TIMODE_DISABLE;
+    ps2_spi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+    ps2_spi.Init.CRCPolynomial = 10;
+    if (HAL_SPI_Init(&ps2_spi) != HAL_OK)
+        Error_Handler();
+}
 #endif
 
 static uint8_t ps2_data[9];
@@ -67,7 +105,7 @@ static void ps2_decode() {
 
 static void ps2_swap_byte(uint8_t tx_byte, uint8_t* rx_byte) {
 #if defined LOSCFG_PS2_USE_HARD_SPI
-    HAL_SPI_TransmitReceive(&hspi1, &tx_byte, rx_byte, 1, 0xFFFF);
+    HAL_SPI_TransmitReceive(&ps2_spi, &tx_byte, rx_byte, 1, 0xFFFF);
 #elif defined LOSCFG_PS2_USE_SOFT_SPI
     uint8_t rx = 0;
     for (int i = 0; i < 8; i++) {
@@ -89,6 +127,10 @@ static void ps2_swap_byte(uint8_t tx_byte, uint8_t* rx_byte) {
     }
 #endif
     LOS_UDelay(10);
+}
+
+void ps2_init() {
+    ps2_setup();
 }
 
 void ps2_read_data() {

@@ -3,9 +3,7 @@ module_name = get_path_info(rebase_path("."), "name")
 module_group(module_name) {
     modules = [
         "core",
+        "usb_device",
         "user"
-    ]
-    modules += [
-        "usb_device"
     ]
 }

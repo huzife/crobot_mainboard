@@ -4,8 +4,6 @@
         "--background-index",
         "--clang-tidy",
         "--clang-tidy-checks=performance-*, bugprone-*, misc-*, google-*, modernize-*, readability-*, portability-*",
-        "--compile-commands-dir=${workspaceFolder}/.vscode",
-        "--query-driver=/opt/gcc-arm-none-eabi-10.3-2021.10/bin/arm-none-eabi-gcc",
         "--enable-config",
         "--completion-parse=auto",
         "--completion-style=detailed",
@@ -14,7 +12,8 @@
         "--pch-storage=memory",
         "--pretty",
         "--ranking-model=decision_forest",
-        "--query-driver=g++",
-        "--function-arg-placeholders=false"
+        "--function-arg-placeholders=false",
+        "--compile-commands-dir=${workspaceFolder}/.vscode",
+        "--query-driver=arm-none-eabi-gcc"
     ]
 }
