@@ -5,6 +5,7 @@
 #include "swsr_queue.h"
 #include "los_event.h"
 #include "los_memory.h"
+#include "los_task.h"
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include <stdbool.h>
@@ -13,6 +14,7 @@
 #define FUNCTION host_com_cb.buf[3]
 #define DATA_START (host_com_cb.buf + 4)
 
+uint32_t host_com_task_id;
 EVENT_CB_S host_com_event;
 Velocity_Message host_com_velocity;
 
@@ -140,8 +142,10 @@ void host_com_init(uint8_t* pool, uint16_t buf_len) {
 
 bool host_com_parse() {
     uint8_t data;
-    if (!swsr_queue_pop(&host_com_cb.rx_queue, &data))
+    if (!swsr_queue_pop(&host_com_cb.rx_queue, &data)) {
+        LOS_TaskSuspend(host_com_task_id);
         return false;
+    }
 
     switch (host_com_cb.state) {
         case HOST_COM_RX_HEADER_FE:
@@ -215,6 +219,12 @@ void host_com_process() {
 void host_rx_callback(uint8_t* buf, uint32_t len) {
     for (int i = 0; i < len; i++) {
         swsr_queue_push(&host_com_cb.rx_queue, buf[i]);
+    }
+
+    uint32_t status;
+    if (LOS_TaskStatusGet(host_com_task_id, &status) == LOS_OK &&
+        status & OS_TASK_STATUS_SUSPEND) {
+        LOS_TaskResume(host_com_task_id);
     }
 }
 

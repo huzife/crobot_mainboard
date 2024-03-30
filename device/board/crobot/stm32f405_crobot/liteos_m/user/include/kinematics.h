@@ -12,6 +12,8 @@
 #define WHEEL_NUM 3
 #endif
 
+extern uint32_t kinematics_task_id;
+
 typedef struct {
     Velocity velocity;
     uint16_t speed[WHEEL_NUM];

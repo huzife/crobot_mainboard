@@ -8,6 +8,7 @@
 
 #define HOST_COM_TX_DONE 0x01
 
+extern uint32_t host_com_task_id;
 extern EVENT_CB_S host_com_event;
 extern Velocity_Message host_com_velocity;
 

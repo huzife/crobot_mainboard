@@ -9,6 +9,7 @@
 #define BUMPER_HIT_FRONT() !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3)
 #define BUMPER_HIT_RIGHT() !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4)
 
+uint32_t bumper_task_id;
 static uint8_t state = 0;
 
 void bumper_init() {

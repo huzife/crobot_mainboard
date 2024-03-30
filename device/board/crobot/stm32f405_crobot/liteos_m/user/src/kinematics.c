@@ -3,9 +3,8 @@
 #include <math.h>
 #include <stdbool.h>
 
-// static TIM_HandleTypeDef kinematics_tim;
+uint32_t kinematics_task_id;
 TIM_HandleTypeDef kinematics_tim;
-
 Kinematics k_inverse = {0};
 Kinematics k_forward = {0};
 Odometry odometry = {0};

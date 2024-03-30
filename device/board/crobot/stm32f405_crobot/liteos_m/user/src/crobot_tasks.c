@@ -17,11 +17,6 @@
 #define MEMORY_POOL_SIZE 2048
 static uint8_t mem_pool[MEMORY_POOL_SIZE];
 
-static uint32_t host_com_task_id;
-static uint32_t bumper_task_id;
-static uint32_t controller_task_id;
-static uint32_t kinematics_task_id;
-
 static void host_com_task() {
     icm42605_init();
     host_com_init(mem_pool, 128);
@@ -30,8 +25,6 @@ static void host_com_task() {
     host_com_velocity.id = vel_mux_register(5, 100);
 
     while (true) {
-        LOS_TaskDelay(1);
-
         if (host_com_parse())
             host_com_process();
     }
