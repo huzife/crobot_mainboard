@@ -109,7 +109,7 @@ static void kinematics_task() {
         // get current speed
         uint16_t read_buf[WHEEL_NUM];
         if (modbus_rtu_get_input_regs(0, 1, 0, WHEEL_NUM, read_buf)) {
-            kinematics_set_current_motor_speed(read_buf);
+            kinematics_set_current_motor_speed((int16_t*)read_buf);
             kinematics_forward();
             kinematics_update_odom();
         }
@@ -118,7 +118,7 @@ static void kinematics_task() {
         if (!LOS_AtomicCmpXchg32bits(&velocity_avaliable, 0, 1)) {
             kinematics_inverse();
             modbus_rtu_set_holding_regs(
-                0, 1, 0, kinematics_get_target_motor_speed(), WHEEL_NUM);
+                0, 1, 0, (uint16_t*)kinematics_get_target_motor_speed(), WHEEL_NUM);
         }
 
         LOS_TaskDelay(50);

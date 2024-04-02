@@ -5,9 +5,9 @@
 #define BUMPER_FRONT_MASK (1 << 1)
 #define BUMPER_RIGHT_MASK (1 << 2)
 
-#define BUMPER_HIT_LEFT() !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5)
-#define BUMPER_HIT_FRONT() !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3)
-#define BUMPER_HIT_RIGHT() !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4)
+#define BUMPER_HIT_LEFT() !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_3)
+#define BUMPER_HIT_FRONT() !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_4)
+#define BUMPER_HIT_RIGHT() !HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5)
 
 uint32_t bumper_task_id;
 static uint8_t state = 0;

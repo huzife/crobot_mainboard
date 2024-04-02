@@ -21,32 +21,29 @@ void kinematics_inverse() {
     double angular = k_inverse.velocity.angular_z / angular_factor;
 
     // rotate speed of each wheel, rad/s
-    double speed[WHEEL_NUM];
     double v = angular * DISTANCE;
-    speed[0] = v - linear_x * M_SQRT3 / 2 + linear_y / 2;
-    speed[1] = v - linear_y;
-    speed[2] = v + linear_x * M_SQRT3 / 2 + linear_y / 2;
+    double speed_left = v - linear_x * M_SQRT3 / 2 + linear_y / 2;
+    double speed_back = v - linear_y;
+    double speed_right = v + linear_x * M_SQRT3 / 2 + linear_y / 2;
 
     // motor speed(count in an interval time)
     double factor = pid_interval * CPR / (2 * M_PI);
-    for (int i = 0; i < WHEEL_NUM; i++) {
-        k_inverse.speed[i] = speed[i] * factor;
-    }
+    k_inverse.speed[0] = speed_left * factor;
+    k_inverse.speed[1] = speed_back * factor;
+    k_inverse.speed[2] = speed_right * factor;
 }
 
 void kinematics_forward() {
     // rotate speed
     double factor = pid_interval * CPR / (2 * M_PI);
-    double speed[WHEEL_NUM] = {
-        (double)k_forward.speed[0] / factor,
-        (double)k_forward.speed[1] / factor,
-        (double)k_forward.speed[2] / factor
-    };
+    double speed_left = k_forward.speed[0] / factor;
+    double speed_back = k_forward.speed[1] / factor;
+    double speed_right = k_forward.speed[2] / factor;
 
     // linear and angular
-    double linear_x = (speed[2] - speed[0]) / M_SQRT3;
-    double linear_y = (speed[0] - 2 * speed[1] + speed[2]) / 3;
-    double angular = (speed[0] + speed[1] + speed[2]) / 3;
+    double linear_x = (speed_right - speed_left) / M_SQRT3;
+    double linear_y = (speed_left - 2 * speed_back + speed_right) / 3;
+    double angular = (speed_left + speed_back + speed_right) / 3;
 
     // correct
     k_forward.velocity.linear_x = linear_x * linear_factor;

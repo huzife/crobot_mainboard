@@ -109,7 +109,7 @@ bool bus_serial_request(uint16_t id, uint8_t* write_buf, uint16_t write_len,
         return false;
 
     UART_HandleTypeDef* uart = bus_serial[id].huart;
-    PRINT("Bus %d state: %d\n", id, uart->gState);
+    // PRINT("Bus %d state: %d\n", id, uart->gState);
 
     // lock bus
     LOS_TaskLock();

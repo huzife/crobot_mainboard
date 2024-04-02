@@ -59,7 +59,7 @@ inline static void hex_to_float(uint8_t* hex, float* val) {
 }
 
 static bool set_velocity_func() {
-    if (DATA_LEN != 9)
+    if (DATA_LEN != 13)
         return false;
 
     hex_to_float(DATA_START, &host_com_velocity.velocity.linear_x);

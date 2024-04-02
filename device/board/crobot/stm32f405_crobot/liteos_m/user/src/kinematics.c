@@ -66,12 +66,12 @@ Velocity kinematics_get_current_velocity() {
     return k_forward.velocity;
 }
 
-void kinematics_set_current_motor_speed(uint16_t* speeds) {
+void kinematics_set_current_motor_speed(int16_t* speeds) {
     for (int i = 0; i < WHEEL_NUM; i++) {
         k_forward.speed[i] = speeds[i];
     }
 }
 
-uint16_t* kinematics_get_target_motor_speed() {
+int16_t* kinematics_get_target_motor_speed() {
     return k_inverse.speed;
 }
