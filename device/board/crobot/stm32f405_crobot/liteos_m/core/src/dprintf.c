@@ -30,7 +30,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "main.h"
+#include "stm32f4xx_hal.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -938,8 +938,7 @@ void kernel_printf_init() {
     debug_uart.Init.Mode = UART_MODE_TX_RX;
     debug_uart.Init.HwFlowCtl = UART_HWCONTROL_NONE;
     debug_uart.Init.OverSampling = UART_OVERSAMPLING_16;
-    if (HAL_UART_Init(&debug_uart) != HAL_OK)
-        Error_Handler();
+    HAL_UART_Init(&debug_uart);
 }
 
 int __io_putchar(int ch) {

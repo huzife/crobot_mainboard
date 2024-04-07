@@ -1,8 +1,6 @@
 #ifndef USER_HOST_COM_H
 #define USER_HOST_COM_H
 
-#include "vel_mux.h"
-#include "los_event.h"
 #include <stdbool.h>
 #include <stdint.h>
 

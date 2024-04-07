@@ -1,5 +1,5 @@
 #include "ps2.h"
-#include "main.h"
+#include "stm32f4xx_hal.h"
 #include "los_tick.h"
 
 #define PS2_CS_LOW() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET)
@@ -46,8 +46,7 @@ static void ps2_spi_init() {
     ps2_spi.Init.TIMode = SPI_TIMODE_DISABLE;
     ps2_spi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     ps2_spi.Init.CRCPolynomial = 10;
-    if (HAL_SPI_Init(&ps2_spi) != HAL_OK)
-        Error_Handler();
+    HAL_SPI_Init(&ps2_spi);
 }
 #endif
 

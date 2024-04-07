@@ -3,13 +3,14 @@
 #include "kinematics.h"
 #include "mem_pool.h"
 #include "swsr_queue.h"
+#include "vel_mux.h"
 #include "ultrasonic.h"
+#include "usb_device.h"
+#include "usbd_cdc_if.h"
 #include "los_atomic.h"
 #include "los_debug.h"
 #include "los_event.h"
 #include "los_memory.h"
-#include "usb_device.h"
-#include "usbd_cdc_if.h"
 #include <stdbool.h>
 
 #define HOST_COM_VEL_PRIORITY 5
@@ -70,10 +71,6 @@ static bool set_velocity_func() {
     hex_to_float(DATA_START, &host_com_velocity.velocity.linear_x);
     hex_to_float(DATA_START + 4, &host_com_velocity.velocity.linear_y);
     hex_to_float(DATA_START + 8, &host_com_velocity.velocity.angular_z);
-    PRINT_DEBUG("vx: %.2f, vy: %.2f, angular: %.2f\n",
-                host_com_velocity.velocity.linear_x,
-                host_com_velocity.velocity.linear_y,
-                host_com_velocity.velocity.angular_z);
     vel_mux_set_velocity(host_com_velocity);
     DATA_LEN = 0;
 
@@ -187,11 +184,11 @@ bool host_com_init(uint16_t buf_len) {
     if (LOS_EventInit(&host_com_event) != LOS_OK) {
         PRINT_ERR("Failed to init host_com_event\n");
         return false;
-    } else {
-        if (LOS_EventWrite(&host_com_event, HOST_COM_TX_DONE) != LOS_OK) {
-            PRINT_ERR("Failed to write HOST_COM_TX_DONE to host_com_event\n");
-            return false;
-        }
+    }
+
+    if (LOS_EventWrite(&host_com_event, HOST_COM_TX_DONE) != LOS_OK) {
+        PRINT_ERR("Failed to write HOST_COM_TX_DONE to host_com_event\n");
+        return false;
     }
 
     int vel_id = vel_mux_register(HOST_COM_VEL_PRIORITY, HOST_COM_VEL_EXPIRY_TIME);

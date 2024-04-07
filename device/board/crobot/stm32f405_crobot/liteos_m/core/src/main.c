@@ -19,7 +19,7 @@
 
 #include "main.h"
 #include "gpio.h"
-#include "crobot_tasks.h"
+#include "crobot.h"
 #include "target_config.h"
 
 void SystemClock_Config(void);
@@ -38,7 +38,7 @@ int main(void)
   kernel_printf_init();
 #endif
 
-  start_tasks();
+  crobot_start();
 
   return -1;
 }

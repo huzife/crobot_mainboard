@@ -71,7 +71,4 @@ extern unsigned int __los_heap_addr_end__;
 
 #define LOSCFG_BASE_CORE_SCHED_SLEEP                        1
 
-#define LOSCFG_BACKTRACE_TYPE                               1
-#define LOSCFG_BACKTRACE_DEPTH                              15
-
 #endif // _TARGET_CONFIG_H

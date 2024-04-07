@@ -1,5 +1,5 @@
 #include "modbus_rtu.h"
-#include "main.h"
+#include "stm32f4xx_hal.h"
 #include "los_debug.h"
 #include "los_mux.h"
 #include <string.h>
@@ -47,8 +47,7 @@ static void modbus_uart_init(UART_HandleTypeDef* huart) {
     huart->Init.Mode = UART_MODE_TX_RX;
     huart->Init.HwFlowCtl = UART_HWCONTROL_NONE;
     huart->Init.OverSampling = UART_OVERSAMPLING_16;
-    if (HAL_UART_Init(huart) != HAL_OK)
-        Error_Handler();
+    HAL_UART_Init(huart);
 }
 
 static void modbus_uart_dma_init(DMA_HandleTypeDef* hdma) {
@@ -60,8 +59,7 @@ static void modbus_uart_dma_init(DMA_HandleTypeDef* hdma) {
     hdma->Init.Mode = DMA_NORMAL;
     hdma->Init.Priority = DMA_PRIORITY_LOW;
     hdma->Init.FIFOMode = DMA_FIFOMODE_DISABLE;
-    if (HAL_DMA_Init(hdma) != HAL_OK)
-        Error_Handler();
+    HAL_DMA_Init(hdma);
 }
 
 static void modbus_t15_timer_init(TIM_HandleTypeDef* htim) {
@@ -70,8 +68,7 @@ static void modbus_t15_timer_init(TIM_HandleTypeDef* htim) {
     htim->Init.Period = 750-1;
     htim->Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim->Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    if (HAL_TIM_Base_Init(htim) != HAL_OK)
-        Error_Handler();
+    HAL_TIM_Base_Init(htim);
 }
 
 static void bus0_init() {

@@ -1,5 +1,5 @@
 #include "bumper.h"
-#include "main.h"
+#include "stm32f4xx_hal.h"
 
 #define BUMPER_LEFT_MASK (1 << 0)
 #define BUMPER_FRONT_MASK (1 << 1)

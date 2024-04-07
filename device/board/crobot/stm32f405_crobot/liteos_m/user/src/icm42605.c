@@ -1,6 +1,6 @@
 #include "icm42605.h"
+#include "stm32f4xx_hal.h"
 #include "los_task.h"
-#include "main.h"
 
 #if defined LOSCFG_ICM42605_USE_HARD_SPI
 #include "spi.h"
@@ -30,8 +30,7 @@ static void icm42605_setup() {
     icm42605_i2c.Init.OwnAddress2 = 0;
     icm42605_i2c.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
     icm42605_i2c.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-    if (HAL_I2C_Init(&icm42605_i2c) != HAL_OK)
-        Error_Handler();
+    HAL_I2C_Init(&icm42605_i2c);
 }
 #endif
 
