@@ -19,10 +19,10 @@
 
 #include "main.h"
 #include "gpio.h"
-#include "crobot.h"
 #include "target_config.h"
 
 void SystemClock_Config(void);
+extern void crobot_start();
 
 /**
   * @brief  The application entry point.

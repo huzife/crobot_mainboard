@@ -30,9 +30,7 @@ kernel_module(module_name) {
             "src/kinematics_3wo.c"
         ]
     }
-}
 
-config("public") {
     include_dirs = [
         "include"
     ]
