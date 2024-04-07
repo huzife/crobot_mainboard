@@ -6,7 +6,6 @@ kernel_module(module_name) {
         "src/dprintf.c",
         "src/gpio.c",
         "src/main.c",
-        "src/print.c",
         "src/stm32f4xx_hal_msp.c",
         "src/stm32f4xx_hal_timebase_tim.c",
         "src/stm32f4xx_it.c",

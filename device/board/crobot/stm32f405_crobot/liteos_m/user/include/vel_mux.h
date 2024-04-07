@@ -14,9 +14,8 @@ typedef struct {
 extern volatile int velocity_avaliable;
 
 /// @brief Init vel_mux module
-/// @param[in] mem_pool Address of memory pool
 /// @param[in] max_vel_source_count The maximum number of velocity source
-void vel_mux_init(uint8_t* mem_pool, uint32_t max_vel_source_count);
+void vel_mux_init(uint32_t max_vel_source_count);
 
 /// @brief Register a velocity source to vel_mux
 /// @param[in] priority Priority of this velocity source

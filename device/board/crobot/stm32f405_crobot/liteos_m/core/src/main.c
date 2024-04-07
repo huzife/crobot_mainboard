@@ -19,8 +19,8 @@
 
 #include "main.h"
 #include "gpio.h"
-#include "print.h"
 #include "crobot_tasks.h"
+#include "target_config.h"
 
 void SystemClock_Config(void);
 
@@ -33,7 +33,10 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
   MX_GPIO_Init();
-  print_init();
+#if (LOSCFG_KERNEL_PRINTF == 1)
+  extern void kernel_printf_init();
+  kernel_printf_init();
+#endif
 
   start_tasks();
 

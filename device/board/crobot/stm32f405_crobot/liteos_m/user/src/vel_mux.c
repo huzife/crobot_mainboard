@@ -1,5 +1,6 @@
 #include "vel_mux.h"
 #include "kinematics.h"
+#include "mem_pool.h"
 #include "los_atomic.h"
 #include "los_memory.h"
 #include "los_mux.h"
@@ -26,7 +27,7 @@ static void vel_mux_timer_callback(uint32_t id) {
         vel_mux_cb.active_id = VACANT;
 }
 
-void vel_mux_init(uint8_t* mem_pool, uint32_t max_vel_source_count) {
+void vel_mux_init(uint32_t max_vel_source_count) {
     velocity_avaliable = 0;
     vel_mux_cb.count = 0;
     vel_mux_cb.max_count = max_vel_source_count;

@@ -1,45 +1,39 @@
 #include "crobot_tasks.h"
-#include "bus_serial.h"
 #include "bumper.h"
 #include "host_com.h"
 #include "icm42605.h"
 #include "kinematics.h"
+#include "mem_pool.h"
 #include "modbus_rtu.h"
 #include "ps2.h"
+#include "ultrasonic.h"
 #include "vel_mux.h"
-#include "print.h"
 #include "los_atomic.h"
-#include "los_event.h"
+#include "los_debug.h"
 #include "los_memory.h"
 #include "los_task.h"
 #include <stdbool.h>
 
-#define MEMORY_POOL_SIZE 2048
-static uint8_t mem_pool[MEMORY_POOL_SIZE];
-
 static void host_com_task() {
-    icm42605_init();
-    host_com_init(mem_pool, 128);
-    LOS_EventInit(&host_com_event);
-    LOS_EventWrite(&host_com_event, HOST_COM_TX_DONE);
-    host_com_velocity.id = vel_mux_register(5, 100);
+    if (!host_com_init(128)) {
+        PRINT_ERR("Host com init failed\n");
+        return;
+    }
 
     while (true) {
-        if (host_com_parse())
-            host_com_process();
+        if (!host_com_parse())
+            LOS_TaskDelay(1);
     }
 }
 
 static void bumper_task() {
     int vel_id = vel_mux_register(0, 200);
     if (vel_id < 0) {
-        PRINT("Register bumper failed\n");
+        PRINT_ERR("Register bumper velocity failed\n");
         return;
     }
-
-    bumper_init();
-
     Velocity_Message velocity = {vel_id, {0.0, 0.0, 0.0}};
+    bumper_init();
 
     while (true) {
         Bumper_State state = bumper_check();
@@ -76,7 +70,7 @@ static void controller_task() {
     ps2_init();
     int vel_id = vel_mux_register(1, 100);
     if (vel_id < 0) {
-        PRINT("Register controller failed\n");
+        PRINT_ERR("Register controller failed\n");
         return;
     }
 
@@ -88,27 +82,27 @@ static void controller_task() {
             velocity.velocity.linear_x = 0.3 * ps2_state.Rocker_LY / 128;
             velocity.velocity.angular_z = -1.0 * ps2_state.Rocker_RX / 128;
             vel_mux_set_velocity(velocity);
+            LOS_TaskDelay(50);
+        } else {
+            LOS_TaskDelay(1000);
         }
-        LOS_TaskDelay(50);
     }
 }
 
 static void kinematics_task() {
     uint16_t proto_rev;
-    if (!modbus_rtu_get_input_regs(0, 1, 0xFF, 1, &proto_rev)) {
-        PRINT("Failed to read protocol revision\n");
+    if (!modbus_get_input_regs(0, 1, 0xFF, 1, &proto_rev)) {
+        PRINT_ERR("Failed to read protocol revision\n");
         return;
     } else if (proto_rev < 3) {
-        PRINT("Protocol revision too low\n");
+        PRINT_ERR("Protocol revision too low\n");
         return;
     }
-
-    kinematics_init();
 
     while (true) {
         // get current speed
         uint16_t read_buf[WHEEL_NUM];
-        if (modbus_rtu_get_input_regs(0, 1, 0, WHEEL_NUM, read_buf)) {
+        if (modbus_get_input_regs(0, 1, 0, WHEEL_NUM, read_buf)) {
             kinematics_set_current_motor_speed((int16_t*)read_buf);
             kinematics_forward();
             kinematics_update_odom();
@@ -117,10 +111,19 @@ static void kinematics_task() {
         // set velocity if there is any velocity message avaliable
         if (!LOS_AtomicCmpXchg32bits(&velocity_avaliable, 0, 1)) {
             kinematics_inverse();
-            modbus_rtu_set_holding_regs(
+            modbus_set_holding_regs(
                 0, 1, 0, (uint16_t*)kinematics_get_target_motor_speed(), WHEEL_NUM);
         }
 
+        LOS_TaskDelay(50);
+    }
+}
+
+static void ultrasonic_task() {
+    while (true) {
+        uint16_t range;
+        modbus_get_input_regs(1, 1, 0, 1, &range);
+        LOS_AtomicSet(&ultrasonic_range, (int)range);
         LOS_TaskDelay(50);
     }
 }
@@ -138,9 +141,9 @@ static void create_task(uint32_t* task_id,
 
     uint32_t ret = LOS_TaskCreate(task_id, &init_param);
     if (ret != LOS_OK)
-        PRINT("%s create failed, return code: %d\n", name, ret);
+        PRINTK("%s create failed, return code: %d\n", name, ret);
     else
-        PRINT("%s create success\n", name);
+        PRINTK("%s create success\n", name);
 }
 
 static void crobot_init() {
@@ -148,8 +151,9 @@ static void crobot_init() {
 
     // Initialize resources that are used by multiple tasks
     LOS_MemInit(mem_pool, MEMORY_POOL_SIZE);
-    bus_serial_init();
-    vel_mux_init(mem_pool, 8);
+    icm42605_init();
+    modbus_init();
+    vel_mux_init(8);
 }
 
 void start_tasks() {
@@ -167,6 +171,8 @@ void start_tasks() {
                 "controller_task", 6, 0x1000);
     create_task(&kinematics_task_id, (TSK_ENTRY_FUNC)kinematics_task,
                 "kinematics_task", 6, 0x1000);
+    create_task(&ultrasonic_task_id, (TSK_ENTRY_FUNC)ultrasonic_task,
+                "ultrasonic_task", 6, 0x1000);
 
     // unlock the task scheduling
     LOS_TaskUnlock();

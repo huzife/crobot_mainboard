@@ -1,22 +1,27 @@
 #include "host_com.h"
 #include "icm42605.h"
 #include "kinematics.h"
-#include "modbus_rtu.h"
+#include "mem_pool.h"
 #include "swsr_queue.h"
+#include "ultrasonic.h"
+#include "los_atomic.h"
+#include "los_debug.h"
 #include "los_event.h"
 #include "los_memory.h"
-#include "los_task.h"
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include <stdbool.h>
+
+#define HOST_COM_VEL_PRIORITY 5
+#define HOST_COM_VEL_EXPIRY_TIME 100
 
 #define DATA_LEN host_com_cb.buf[2]
 #define FUNCTION host_com_cb.buf[3]
 #define DATA_START (host_com_cb.buf + 4)
 
 uint32_t host_com_task_id;
-EVENT_CB_S host_com_event;
-Velocity_Message host_com_velocity;
+static EVENT_CB_S host_com_event;
+static Velocity_Message host_com_velocity;
 
 typedef enum {
     HOST_COM_RX_HEADER_FE,
@@ -65,6 +70,10 @@ static bool set_velocity_func() {
     hex_to_float(DATA_START, &host_com_velocity.velocity.linear_x);
     hex_to_float(DATA_START + 4, &host_com_velocity.velocity.linear_y);
     hex_to_float(DATA_START + 8, &host_com_velocity.velocity.angular_z);
+    PRINT_DEBUG("vx: %.2f, vy: %.2f, angular: %.2f\n",
+                host_com_velocity.velocity.linear_x,
+                host_com_velocity.velocity.linear_y,
+                host_com_velocity.velocity.angular_z);
     vel_mux_set_velocity(host_com_velocity);
     DATA_LEN = 0;
 
@@ -75,14 +84,15 @@ static bool get_odom_func() {
     if (DATA_LEN != 1)
         return false;
 
-    DATA_LEN = 21;
+    DATA_LEN = 25;
     Velocity velocity = kinematics_get_current_velocity();
     Odometry odometry = kinematics_get_odom();
     float_to_hex(velocity.linear_x, DATA_START);
-    float_to_hex(velocity.angular_z, DATA_START + 4);
-    float_to_hex(odometry.position_x, DATA_START + 8);
-    float_to_hex(odometry.position_y, DATA_START + 12);
-    float_to_hex(odometry.direction, DATA_START + 16);
+    float_to_hex(velocity.linear_y, DATA_START + 4);
+    float_to_hex(velocity.angular_z, DATA_START + 8);
+    float_to_hex(odometry.position_x, DATA_START + 12);
+    float_to_hex(odometry.position_y, DATA_START + 16);
+    float_to_hex(odometry.direction, DATA_START + 20);
 
     return true;
 }
@@ -118,70 +128,17 @@ static bool get_ultrasonic_range_func() {
         return false;
 
     DATA_LEN = 3;
-    uint16_t range;
-    if (!modbus_rtu_get_input_regs(1, 1, 0, 1, &range))
-        return false;
 
+    uint16_t range = LOS_AtomicRead(&ultrasonic_range);
     *(DATA_START) = range >> 8;
     *(DATA_START + 1) = range & 0xFF;
 
     return true;
 }
 
-void host_com_init(uint8_t* pool, uint16_t buf_len) {
-    host_com_cb.state = HOST_COM_RX_HEADER_FE;
-    host_com_cb.buf = (uint8_t*)LOS_MemAlloc(pool, buf_len);
-    host_com_cb.buf_len = buf_len;
-    host_com_cb.data_len = 0;
-    host_com_cb.buf[0] = 0xFE;
-    host_com_cb.buf[1] = 0xEF;
-    swsr_queue_init(&host_com_cb.rx_queue, pool, 2 * buf_len);
-
-    MX_USB_DEVICE_Init();
-}
-
-bool host_com_parse() {
-    uint8_t data;
-    if (!swsr_queue_pop(&host_com_cb.rx_queue, &data)) {
-        LOS_TaskSuspend(host_com_task_id);
-        return false;
-    }
-
-    switch (host_com_cb.state) {
-        case HOST_COM_RX_HEADER_FE:
-            if (data == 0xFE)
-                host_com_cb.state = HOST_COM_RX_HEADER_EF;
-            break;
-        case HOST_COM_RX_HEADER_EF:
-            if (data == 0xEF)
-                host_com_cb.state = HOST_COM_RX_LEN;
-            else if (data != 0xFE)
-                host_com_cb.state = HOST_COM_RX_HEADER_FE;
-            break;
-        case HOST_COM_RX_LEN:
-            if (data + 3 > host_com_cb.buf_len) {
-                host_com_cb.state = HOST_COM_RX_HEADER_FE;
-            } else {
-                host_com_cb.state = HOST_COM_RX_DATA;
-                host_com_cb.data_len = 0;
-                DATA_LEN = data;
-            }
-            break;
-        case HOST_COM_RX_DATA:
-            host_com_cb.buf[3 + host_com_cb.data_len] = data;
-            if (++(host_com_cb.data_len) == DATA_LEN) {
-                host_com_cb.state = HOST_COM_RX_HEADER_FE;
-                return true;
-            }
-            break;
-    }
-
-    return false;
-}
-
-void host_com_process() {
+static void host_com_process() {
     bool ret;
-    switch ((Function_Code)host_com_cb.buf[3]) {
+    switch ((Function_Code)FUNCTION) {
         case NONE:
             ret = false;
             break;
@@ -216,15 +173,77 @@ void host_com_process() {
     }
 }
 
+bool host_com_init(uint16_t buf_len) {
+    host_com_cb.state = HOST_COM_RX_HEADER_FE;
+    host_com_cb.buf = (uint8_t*)LOS_MemAlloc(mem_pool, buf_len);
+    host_com_cb.buf_len = buf_len;
+    host_com_cb.data_len = 0;
+    host_com_cb.buf[0] = 0xFE;
+    host_com_cb.buf[1] = 0xEF;
+    swsr_queue_init(&host_com_cb.rx_queue, mem_pool, 2 * buf_len);
+
+    MX_USB_DEVICE_Init();
+
+    if (LOS_EventInit(&host_com_event) != LOS_OK) {
+        PRINT_ERR("Failed to init host_com_event\n");
+        return false;
+    } else {
+        if (LOS_EventWrite(&host_com_event, HOST_COM_TX_DONE) != LOS_OK) {
+            PRINT_ERR("Failed to write HOST_COM_TX_DONE to host_com_event\n");
+            return false;
+        }
+    }
+
+    int vel_id = vel_mux_register(HOST_COM_VEL_PRIORITY, HOST_COM_VEL_EXPIRY_TIME);
+    if (vel_id < 0) {
+        PRINT_ERR("Register host com velocity failed\n");
+        return false;
+    }
+    host_com_velocity.id = vel_id;
+
+    return true;
+}
+
+bool host_com_parse() {
+    uint8_t data;
+    if (!swsr_queue_pop(&host_com_cb.rx_queue, &data))
+        return false;
+
+    switch (host_com_cb.state) {
+        case HOST_COM_RX_HEADER_FE:
+            if (data == 0xFE)
+                host_com_cb.state = HOST_COM_RX_HEADER_EF;
+            break;
+        case HOST_COM_RX_HEADER_EF:
+            if (data == 0xEF)
+                host_com_cb.state = HOST_COM_RX_LEN;
+            else if (data != 0xFE)
+                host_com_cb.state = HOST_COM_RX_HEADER_FE;
+            break;
+        case HOST_COM_RX_LEN:
+            if (data + 3 > host_com_cb.buf_len) {
+                host_com_cb.state = HOST_COM_RX_HEADER_FE;
+            } else {
+                host_com_cb.state = HOST_COM_RX_DATA;
+                host_com_cb.data_len = 0;
+                DATA_LEN = data;
+            }
+            break;
+        case HOST_COM_RX_DATA:
+            host_com_cb.buf[3 + host_com_cb.data_len] = data;
+            if (++(host_com_cb.data_len) == DATA_LEN) {
+                host_com_cb.state = HOST_COM_RX_HEADER_FE;
+                host_com_process();
+            }
+            break;
+    }
+
+    return true;
+}
+
 void host_rx_callback(uint8_t* buf, uint32_t len) {
     for (int i = 0; i < len; i++) {
         swsr_queue_push(&host_com_cb.rx_queue, buf[i]);
-    }
-
-    uint32_t status;
-    if (LOS_TaskStatusGet(host_com_task_id, &status) == LOS_OK &&
-        status & OS_TASK_STATUS_SUSPEND) {
-        LOS_TaskResume(host_com_task_id);
     }
 }
 

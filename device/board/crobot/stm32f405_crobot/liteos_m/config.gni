@@ -41,8 +41,7 @@ board_cflags = [
     "-fdata-sections",
     "-ffunction-sections",
     "-DUSE_HAL_DRIVER",
-    "-DSTM32F405xx",
-    "-DENABLE_PRINT"
+    "-DSTM32F405xx"
 ]
 board_cflags += board_opt_flags
 

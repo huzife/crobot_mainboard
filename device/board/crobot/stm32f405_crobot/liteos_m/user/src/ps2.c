@@ -14,7 +14,7 @@
 #elif defined LOSCFG_PS2_USE_HARD_SPI
 static SPI_HandleTypeDef ps2_spi;
 
-static void ps2_setup() {
+static void ps2_spi_init() {
     // msp init
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     __HAL_RCC_SPI1_CLK_ENABLE();
@@ -131,7 +131,10 @@ static void ps2_swap_byte(uint8_t tx_byte, uint8_t* rx_byte) {
 }
 
 void ps2_init() {
-    ps2_setup();
+#if defined LOSCFG_PS2_USE_SOFT_SPI
+#elif defined LOSCFG_PS2_USE_HARD_SPI
+    ps2_spi_init();
+#endif
 }
 
 void ps2_read_data() {

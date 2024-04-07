@@ -204,6 +204,36 @@ void SysTick_Handler(void)
 /* please refer to the startup file (startup_stm32f4xx.s).                    */
 /******************************************************************************/
 
+extern void modbus_uart_callback(uint16_t id);
+
+void UART4_IRQHandler(void) {
+  modbus_uart_callback(1);
+}
+
+void UART5_IRQHandler(void) {
+  modbus_uart_callback(0);
+}
+
+extern void modbus_dma_tx_callback(uint16_t id);
+
+void DMA1_Stream4_IRQHandler(void) {
+  modbus_dma_tx_callback(1);
+}
+
+void DMA1_Stream7_IRQHandler(void) {
+  modbus_dma_tx_callback(0);
+}
+
+extern void modbus_t15_timeout_callback(uint16_t id);
+
+void TIM1_UP_TIM10_IRQHandler(void) {
+  modbus_t15_timeout_callback(0);
+}
+
+void TIM1_TRG_COM_TIM11_IRQHandler(void) {
+  modbus_t15_timeout_callback(1);
+}
+
 /**
   * @brief This function handles TIM6 global interrupt, DAC1 and DAC2 underrun error interrupts.
   */
@@ -216,20 +246,6 @@ void TIM6_DAC_IRQHandler(void)
   /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
 
   /* USER CODE END TIM6_DAC_IRQn 1 */
-}
-
-/**
-  * @brief This function handles TIM7 global interrupt.
-  */
-void TIM7_IRQHandler(void)
-{
-  /* USER CODE BEGIN TIM7_IRQn 0 */
-
-  /* USER CODE END TIM7_IRQn 0 */
-  HAL_TIM_IRQHandler(&kinematics_tim);
-  /* USER CODE BEGIN TIM7_IRQn 1 */
-
-  /* USER CODE END TIM7_IRQn 1 */
 }
 
 /**

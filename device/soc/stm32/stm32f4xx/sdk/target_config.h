@@ -67,6 +67,7 @@ extern unsigned int __los_heap_addr_end__;
                                        printf module configuration
 ============================================================================= */
 #define LOSCFG_KERNEL_PRINTF                                1
+#define PRINT_LEVEL                                         2 // LOG_ERR_LEVEL
 
 #define LOSCFG_BASE_CORE_SCHED_SLEEP                        1
 

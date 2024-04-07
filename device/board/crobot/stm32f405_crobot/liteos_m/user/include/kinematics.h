@@ -25,8 +25,6 @@ typedef struct {
     float direction;
 } Odometry;
 
-void kinematics_init();
-
 void kinematics_update_odom();
 Odometry kinematics_get_odom();
 

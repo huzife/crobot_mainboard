@@ -3,14 +3,15 @@ module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
     sources = [
         "src/bumper.c",
-        "src/bus_serial.c",
         "src/crobot_tasks.c",
         "src/host_com.c",
         "src/icm42605.c",
         "src/kinematics.c",
+        "src/mem_pool.c",
         "src/modbus_rtu.c",
         "src/ps2.c",
         "src/swsr_queue.c",
+        "src/ultrasonic.c",
         "src/vel_mux.c"
     ]
 
