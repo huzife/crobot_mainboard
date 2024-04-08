@@ -259,13 +259,19 @@ inline static void modbus_timer_reset(uint16_t id) {
 void modbus_uart_callback(uint16_t id) {
     UART_HandleTypeDef* uart = &bus[id].uart;
 
+
     // transmit
     if (__HAL_UART_GET_IT_SOURCE(uart, UART_IT_TC) &&
         __HAL_UART_GET_FLAG(uart, UART_FLAG_TC)) {
         end_transmission(id);
         HAL_UART_IRQHandler(uart); // TC flag will be cleared here
-        if (bus[id].read_len)
+        if (bus[id].read_len) {
+            // enable uart RXNE interrupt
             __HAL_UART_ENABLE_IT(uart, UART_IT_RXNE);
+
+            // set T1.5 timer ARR
+            __HAL_TIM_SET_AUTORELOAD(&bus[id].tim, 750 - 1);
+        }
     }
 
     // receive
@@ -278,14 +284,11 @@ void modbus_uart_callback(uint16_t id) {
             // receive expected data, disable RXNE interrupt
             __HAL_UART_DISABLE_IT(uart, UART_IT_RXNE);
 
-            // set t35 timer
+            // set t35 timer ARR
             __HAL_TIM_SET_AUTORELOAD(&bus[id].tim, 1750 - 1);
-            modbus_timer_reset(id);
             bus[id].status = BUS_WAITING;
-        } else {
-            // reset t15 timer
-            modbus_timer_reset(id);
         }
+        modbus_timer_reset(id);
     }
 }
 
