@@ -118,12 +118,13 @@ static void kinematics_task() {
 }
 
 static void ultrasonic_task() {
-    while (true) {
-        uint16_t range;
-        modbus_get_input_regs(1, 1, 0, 1, &range);
-        LOS_AtomicSet(&ultrasonic_range, (int)range);
-        LOS_TaskDelay(50);
-    }
+    ultrasonic_range = 0xFFFF;
+    // while (true) {
+    //     uint16_t range;
+    //     modbus_get_input_regs(1, 1, 0, 1, &range);
+    //     LOS_AtomicSet(&ultrasonic_range, (int)range);
+    //     LOS_TaskDelay(50);
+    // }
 }
 
 static void create_task(uint32_t* task_id,
@@ -151,6 +152,7 @@ static void crobot_init() {
     LOS_MemInit(mem_pool, MEMORY_POOL_SIZE);
     icm42605_init();
     modbus_init();
+    kinematics_init();
     vel_mux_init(8);
 }
 

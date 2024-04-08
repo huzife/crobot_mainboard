@@ -1,4 +1,5 @@
 #include "kinematics.h"
+#include "los_mux.h"
 #include <math.h>
 #include <stdbool.h>
 
@@ -6,6 +7,8 @@
 extern Kinematics k_inverse;
 extern Kinematics k_forward;
 extern Odometry odometry;
+extern uint32_t target_velocity_mtx;
+extern uint32_t current_velocity_mtx;
 
 double pid_interval = 0.05;
 double linear_factor = 1.0;
@@ -16,8 +19,10 @@ const double SEPARATION = 0.172;
 
 void kinematics_inverse() {
     // corrected linear and angular
+    LOS_MuxPend(target_velocity_mtx, 50);
     double linear = k_inverse.velocity.linear_x / linear_factor;
     double angular = k_inverse.velocity.angular_z / angular_factor;
+    LOS_MuxPost(target_velocity_mtx);
 
     // rotate speed of each wheel, rad/s
     double speed_left = (angular * SEPARATION / 2 - linear) / RADIUS;
@@ -40,6 +45,8 @@ void kinematics_forward() {
     double angular = (RADIUS * (speed_right + speed_left)) / SEPARATION;
 
     // correct
+    LOS_MuxPend(current_velocity_mtx, 50);
     k_forward.velocity.linear_x = linear * linear_factor;
     k_forward.velocity.angular_z = angular * angular_factor;
+    LOS_MuxPost(current_velocity_mtx);
 }

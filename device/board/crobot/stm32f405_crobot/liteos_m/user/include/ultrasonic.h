@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-extern int ultrasonic_range;
+extern volatile int ultrasonic_range;
 extern uint32_t ultrasonic_task_id;
 
 #endif // USER_ULTRASONIC_H

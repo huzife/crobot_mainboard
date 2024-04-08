@@ -25,6 +25,9 @@ typedef struct {
     float direction;
 } Odometry;
 
+/// @brief Init kinematics mutex
+void kinematics_init();
+
 /// @brief Update wheel odometry
 void kinematics_update_odom();
 

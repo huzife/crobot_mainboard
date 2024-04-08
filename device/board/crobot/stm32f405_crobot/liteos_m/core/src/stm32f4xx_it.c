@@ -58,7 +58,6 @@
 /* External variables --------------------------------------------------------*/
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern TIM_HandleTypeDef htim6;
-extern TIM_HandleTypeDef kinematics_tim;
 
 /* USER CODE BEGIN EV */
 
