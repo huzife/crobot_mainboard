@@ -2,6 +2,7 @@ import("//kernel/liteos_m/liteos.gni")
 module_name = get_path_info(rebase_path("."), "name")
 kernel_module(module_name) {
     sources = [
+        "src/battery_voltage.c",
         "src/bumper.c",
         "src/crobot.c",
         "src/host_com.c",

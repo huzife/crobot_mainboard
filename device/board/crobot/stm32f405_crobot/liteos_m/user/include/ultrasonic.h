@@ -3,7 +3,14 @@
 
 #include <stdint.h>
 
-extern volatile int ultrasonic_range;
-extern uint32_t ultrasonic_task_id;
+/// @brief Init ultrasonic timer
+void ultrasonic_init();
+
+/// @brief Update ultrasonic range
+void ultrasonic_update_range();
+
+/// @brief Get ultrasonic range
+/// @return uint32_t
+uint32_t ultrasonic_get_range();
 
 #endif // USER_ULTRASONIC_H

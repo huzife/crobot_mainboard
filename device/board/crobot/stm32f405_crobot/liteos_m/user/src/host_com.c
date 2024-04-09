@@ -1,4 +1,5 @@
 #include "host_com.h"
+#include "battery_voltage.h"
 #include "icm42605.h"
 #include "kinematics.h"
 #include "mem_pool.h"
@@ -7,7 +8,6 @@
 #include "ultrasonic.h"
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
-#include "los_atomic.h"
 #include "los_debug.h"
 #include "los_event.h"
 #include "los_memory.h"
@@ -17,12 +17,21 @@
 #define HOST_COM_VEL_EXPIRY_TIME 100
 
 #define DATA_LEN host_com_cb.buf[2]
-#define FUNCTION host_com_cb.buf[3]
+#define MESSAGE_TYPE host_com_cb.buf[3]
 #define DATA_START (host_com_cb.buf + 4)
 
-uint32_t host_com_task_id;
 static EVENT_CB_S host_com_event;
 static Velocity_Message host_com_velocity;
+
+typedef enum {
+    SET_VELOCITY,
+    GET_ODOM,
+    GET_IMU_TEMPERATURE,
+    GET_IMU_DATA,
+    GET_ULTRASONIC_RANGE,
+    GET_BATTERY_VOLTAGE,
+    MESSAGE_TYPE_MAX
+} Message_Type;
 
 typedef enum {
     HOST_COM_RX_HEADER_FE,
@@ -125,21 +134,31 @@ static bool get_ultrasonic_range_func() {
         return false;
 
     DATA_LEN = 3;
-
-    uint16_t range = LOS_AtomicRead(&ultrasonic_range);
+    uint16_t range = ultrasonic_get_range();
     *(DATA_START) = range >> 8;
     *(DATA_START + 1) = range & 0xFF;
 
     return true;
 }
 
-static void host_com_process() {
-    bool ret;
-    switch ((Function_Code)FUNCTION) {
-        case NONE:
-            ret = false;
-            break;
+static bool get_battery_voltage_func() {
+    if (DATA_LEN != 1)
+        return false;
 
+    DATA_LEN = 5;
+    float_to_hex(battery_get_voltage(), DATA_START);
+
+    return true;
+}
+
+static void host_com_process() {
+    if (MESSAGE_TYPE >= MESSAGE_TYPE_MAX) {
+        PRINT_ERR("Invalid function code: %d\n", MESSAGE_TYPE);
+        return;
+    }
+
+    bool ret;
+    switch ((Message_Type)MESSAGE_TYPE) {
         case SET_VELOCITY:
             ret = set_velocity_func();
             break;
@@ -158,6 +177,14 @@ static void host_com_process() {
 
         case GET_ULTRASONIC_RANGE:
             ret = get_ultrasonic_range_func();
+            break;
+
+        case GET_BATTERY_VOLTAGE:
+            ret = get_battery_voltage_func();
+            break;
+
+        case MESSAGE_TYPE_MAX: // unreachable branch
+            ret = false;
             break;
     }
 

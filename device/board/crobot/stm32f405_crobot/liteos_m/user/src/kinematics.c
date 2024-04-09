@@ -4,7 +4,6 @@
 #include <math.h>
 #include <stdbool.h>
 
-uint32_t kinematics_task_id;
 Kinematics k_inverse;
 Kinematics k_forward;
 Odometry odometry;

@@ -21,7 +21,6 @@ typedef struct {
     uint8_t Key_Rocker_Left, Key_Rocker_Right;              //摇杆按键
 } PS2_State;
 
-extern uint32_t controller_task_id;
 extern volatile PS2_State ps2_state;
 
 /// @brief Init ps2

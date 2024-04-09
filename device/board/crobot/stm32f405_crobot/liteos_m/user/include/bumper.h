@@ -4,8 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-extern uint32_t bumper_task_id;
-
 typedef struct {
     bool left;  // true: hit left
     bool front; // true: hit front

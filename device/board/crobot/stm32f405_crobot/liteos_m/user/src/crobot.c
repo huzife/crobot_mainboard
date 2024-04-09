@@ -1,3 +1,4 @@
+#include "battery_voltage.h"
 #include "bumper.h"
 #include "host_com.h"
 #include "icm42605.h"
@@ -12,10 +13,18 @@
 #include "los_memory.h"
 #include "los_task.h"
 
-static void host_com_task() {
+uint32_t host_com_task_id;
+uint32_t bumper_task_id;
+uint32_t controller_task_id;
+uint32_t kinematics_task_id;
+uint32_t ultrasonic_task_id;
+uint32_t imu_task_id;
+uint32_t battery_voltage_task_id;
+
+static void* host_com_task(uint32_t arg) {
     if (!host_com_init(128)) {
         PRINT_ERR("Host com init failed\n");
-        return;
+        return NULL;
     }
 
     while (true) {
@@ -24,11 +33,11 @@ static void host_com_task() {
     }
 }
 
-static void bumper_task() {
+static void* bumper_task(uint32_t arg) {
     int vel_id = vel_mux_register(0, 200);
     if (vel_id < 0) {
         PRINT_ERR("Register bumper velocity failed\n");
-        return;
+        return NULL;
     }
     Velocity_Message velocity = {vel_id, {0.0, 0.0, 0.0}};
     bumper_init();
@@ -64,12 +73,12 @@ static void bumper_task() {
     }
 }
 
-static void controller_task() {
+static void* controller_task(uint32_t arg) {
     ps2_init();
     int vel_id = vel_mux_register(1, 100);
     if (vel_id < 0) {
         PRINT_ERR("Register controller failed\n");
-        return;
+        return NULL;
     }
 
     Velocity_Message velocity = {vel_id, {0.0, 0.0, 0.0}};
@@ -87,14 +96,14 @@ static void controller_task() {
     }
 }
 
-static void kinematics_task() {
+static void* kinematics_task(uint32_t arg) {
     uint16_t proto_rev;
     if (!modbus_get_input_regs(0, 1, 0xFF, 1, &proto_rev)) {
         PRINT_ERR("Failed to read protocol revision\n");
-        return;
+        return NULL;
     } else if (proto_rev < 3) {
         PRINT_ERR("Protocol revision too low\n");
-        return;
+        return NULL;
     }
 
     while (true) {
@@ -117,14 +126,37 @@ static void kinematics_task() {
     }
 }
 
-static void ultrasonic_task() {
-    ultrasonic_range = 0xFFFF;
-    // while (true) {
-    //     uint16_t range;
-    //     modbus_get_input_regs(1, 1, 0, 1, &range);
-    //     LOS_AtomicSet(&ultrasonic_range, (int)range);
-    //     LOS_TaskDelay(50);
-    // }
+static void* ultrasonic_task(uint32_t arg) {
+    ultrasonic_init();
+    while (true) {
+        ultrasonic_update_range();
+        LOS_TaskDelay(50);
+    }
+}
+
+static void* imu_task(uint32_t arg) {
+    icm42605_init();
+    int cnt = 0;
+    while (true) {
+        // imu data update rate: 100Hz
+        icm42605_update_data();
+
+        // imu temperature update rate: 50Hz
+        if (++cnt == 50) {
+            icm42605_update_temperature();
+            cnt = 0;
+        }
+
+        LOS_TaskDelay(10);
+    }
+}
+
+static void* battery_voltage_task(uint32_t arg) {
+    battery_voltage_init();
+    while (true) {
+        battery_voltage_update();
+        LOS_TaskDelay(1000);
+    }
 }
 
 static void create_task(uint32_t* task_id,
@@ -150,7 +182,6 @@ static void crobot_init() {
 
     // Initialize resources that are used by multiple tasks
     LOS_MemInit(mem_pool, MEMORY_POOL_SIZE);
-    icm42605_init();
     modbus_init();
     kinematics_init();
     vel_mux_init(8);
@@ -159,22 +190,14 @@ static void crobot_init() {
 void crobot_start() {
     crobot_init();
 
-    // lock the task scheduling
     LOS_TaskLock();
-
-    // create tasks
-    create_task(&host_com_task_id, (TSK_ENTRY_FUNC)host_com_task,
-                "host_com_task", 6, 0x1000);
-    create_task(&bumper_task_id, (TSK_ENTRY_FUNC)bumper_task,
-                "bumper_task", 6, 0x1000);
-    create_task(&controller_task_id, (TSK_ENTRY_FUNC)controller_task,
-                "controller_task", 6, 0x1000);
-    create_task(&kinematics_task_id, (TSK_ENTRY_FUNC)kinematics_task,
-                "kinematics_task", 6, 0x1000);
-    create_task(&ultrasonic_task_id, (TSK_ENTRY_FUNC)ultrasonic_task,
-                "ultrasonic_task", 6, 0x1000);
-
-    // unlock the task scheduling
+    create_task(&host_com_task_id, host_com_task, "host_com_task", 6, 0x1000);
+    create_task(&bumper_task_id, bumper_task, "bumper_task", 6, 0x1000);
+    create_task(&controller_task_id, controller_task, "controller_task", 6, 0x1000);
+    create_task(&kinematics_task_id, kinematics_task, "kinematics_task", 6, 0x1000);
+    create_task(&ultrasonic_task_id, ultrasonic_task, "ultrasonic_task", 6, 0x1000);
+    create_task(&imu_task_id, imu_task, "imu_task", 6, 0x1000);
+    create_task(&battery_voltage_task_id, battery_voltage_task, "battery_voltage_task", 6, 0x1000);
     LOS_TaskUnlock();
 
     // start scheduling

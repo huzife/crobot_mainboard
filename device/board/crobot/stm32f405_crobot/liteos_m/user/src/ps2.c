@@ -50,7 +50,6 @@ static void ps2_spi_init() {
 }
 #endif
 
-uint32_t controller_task_id;
 static uint8_t ps2_data[9];
 volatile PS2_State ps2_state;
 

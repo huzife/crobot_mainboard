@@ -3,8 +3,6 @@
 
 #include "stm32f4xx.h"
 
-// memory allocation macro
-
 // clock
 #define OS_SYS_CLOCK                                        SystemCoreClock
 #define LOSCFG_BASE_CORE_TICK_PER_SECOND                    (1000UL)

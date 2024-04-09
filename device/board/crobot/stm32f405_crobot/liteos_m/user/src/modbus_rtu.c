@@ -1,5 +1,4 @@
 #include "modbus_rtu.h"
-#include "stm32f4xx_hal.h"
 #include "los_debug.h"
 #include "los_mux.h"
 #include <string.h>
@@ -196,8 +195,9 @@ static bool bus_request(uint16_t id, uint16_t write_len,
     uint32_t start_tick = LOS_TickCountGet();
 
     // lock bus
-    if (LOS_MuxPend(bus[id].mtx, timeout) != LOS_OK) {
-        PRINT_ERR("Bus request failed, didn't get mutex, id = %d\n", id);
+    uint32_t ret = LOS_MuxPend(bus[id].mtx, timeout);
+    if (ret != LOS_OK) {
+        PRINT_ERR("Bus request failed, didn't get mutex, id = %d, ret = %x\n", id, ret);
         return false;
     }
 
