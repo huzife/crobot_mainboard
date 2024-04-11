@@ -11,8 +11,6 @@ typedef struct {
     Velocity velocity;
 } Velocity_Message;
 
-extern volatile int velocity_avaliable;
-
 /// @brief Init vel_mux module
 /// @param[in] max_vel_source_count The maximum number of velocity source
 void vel_mux_init(uint32_t max_vel_source_count);

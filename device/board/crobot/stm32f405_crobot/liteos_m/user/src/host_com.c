@@ -25,7 +25,7 @@ static Velocity_Message host_com_velocity;
 
 typedef enum {
     SET_VELOCITY,
-    GET_ODOM,
+    GET_ODOMETRY,
     GET_IMU_TEMPERATURE,
     GET_IMU_DATA,
     GET_ULTRASONIC_RANGE,
@@ -86,13 +86,14 @@ static bool set_velocity_func() {
     return true;
 }
 
-static bool get_odom_func() {
+static bool get_odometry_func() {
     if (DATA_LEN != 1)
         return false;
 
     DATA_LEN = 25;
-    Velocity velocity = kinematics_get_current_velocity();
-    Odometry odometry = kinematics_get_odom();
+    Velocity velocity;
+    Odometry odometry;
+    kinematics_get_odometry_and_velocity(&odometry, &velocity);
     float_to_hex(velocity.linear_x, DATA_START);
     float_to_hex(velocity.linear_y, DATA_START + 4);
     float_to_hex(velocity.angular_z, DATA_START + 8);
@@ -163,8 +164,8 @@ static void host_com_process() {
             ret = set_velocity_func();
             break;
 
-        case GET_ODOM:
-            ret = get_odom_func();
+        case GET_ODOMETRY:
+            ret = get_odometry_func();
             break;
 
         case GET_IMU_TEMPERATURE:

@@ -9,8 +9,6 @@
 
 #define VACANT -1
 
-volatile int velocity_avaliable;
-
 // velocity mux control block
 static struct {
     uint32_t count;         // Registered source count
@@ -28,7 +26,6 @@ static void vel_mux_timer_callback(uint32_t id) {
 }
 
 void vel_mux_init(uint32_t max_vel_source_count) {
-    velocity_avaliable = 0;
     vel_mux_cb.count = 0;
     vel_mux_cb.max_count = max_vel_source_count;
     vel_mux_cb.priority = (uint8_t*)LOS_MemAlloc(
@@ -77,7 +74,6 @@ void vel_mux_set_velocity(Velocity_Message velocity) {
 
         // set velocity
         kinematics_set_target_velocity(velocity.velocity);
-        LOS_AtomicSet(&velocity_avaliable, 1);
     }
     LOS_MuxPost(vel_mux_cb.set_vel_mtx);
 }

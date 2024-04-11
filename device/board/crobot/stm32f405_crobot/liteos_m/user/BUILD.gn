@@ -18,17 +18,17 @@ kernel_module(module_name) {
 
     if (defined(LOSCFG_ROBOT_BASE_2WD)) {
         sources += [
-            "src/kinematics_2wd.c"
+            "src/kinematics_impl/kinematics_2wd.c"
         ]
     }
     if (defined(LOSCFG_ROBOT_BASE_4WD)) {
         sources += [
-            "src/kinematics_4wd.c"
+            "src/kinematics_impl/kinematics_4wd.c"
         ]
     }
     if (defined(LOSCFG_ROBOT_BASE_3WO)) {
         sources += [
-            "src/kinematics_3wo.c"
+            "src/kinematics_impl/kinematics_3wo.c"
         ]
     }
 
