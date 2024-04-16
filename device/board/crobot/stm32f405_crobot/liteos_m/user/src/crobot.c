@@ -8,7 +8,6 @@
 #include "ps2.h"
 #include "ultrasonic.h"
 #include "vel_mux.h"
-#include "los_atomic.h"
 #include "los_debug.h"
 #include "los_memory.h"
 #include "los_task.h"
@@ -31,6 +30,8 @@ static void* host_com_task(uint32_t arg) {
         if (!host_com_parse())
             LOS_TaskDelay(1);
     }
+
+    return NULL;
 }
 
 static void* bumper_task(uint32_t arg) {
@@ -39,22 +40,22 @@ static void* bumper_task(uint32_t arg) {
         PRINT_ERR("Register bumper velocity failed\n");
         return NULL;
     }
-    Velocity_Message velocity = {vel_id, {0.0, 0.0, 0.0}};
+    Velocity_Message velocity = {vel_id, {0.0f, 0.0f, 0.0f}};
     bumper_init();
 
     while (true) {
         Bumper_State state = bumper_check();
         if (state.left || state.front || state.right) {
             if (state.left) {
-                velocity.velocity.linear_x -= 0.1;
-                velocity.velocity.angular_z -= 0.4;
+                velocity.velocity.linear_x -= 0.1f;
+                velocity.velocity.angular_z -= 0.4f;
             }
             if (state.front) {
-                velocity.velocity.linear_x -= 0.1;
+                velocity.velocity.linear_x -= 0.1f;
             }
             if (state.right) {
-                velocity.velocity.linear_x -= 0.1;
-                velocity.velocity.angular_z += 0.4;
+                velocity.velocity.linear_x -= 0.1f;
+                velocity.velocity.angular_z += 0.4f;
             }
 
             // set velocity
@@ -64,13 +65,15 @@ static void* bumper_task(uint32_t arg) {
             }
 
             // stop
-            velocity.velocity.linear_x = 0.0;
-            velocity.velocity.angular_z = 0.0;
+            velocity.velocity.linear_x = 0.0f;
+            velocity.velocity.angular_z = 0.0f;
             vel_mux_set_velocity(velocity);
         }
 
         LOS_TaskDelay(10);
     }
+
+    return NULL;
 }
 
 static void* controller_task(uint32_t arg) {
@@ -81,19 +84,21 @@ static void* controller_task(uint32_t arg) {
         return NULL;
     }
 
-    Velocity_Message velocity = {vel_id, {0.0, 0.0, 0.0}};
+    Velocity_Message velocity = {vel_id, {0.0f, 0.0f, 0.0f}};
 
     while (true) {
         ps2_read_data();
         if (ps2_state.Mode) {
-            velocity.velocity.linear_x = 0.3 * ps2_state.Rocker_LY / 128;
-            velocity.velocity.angular_z = -1.0 * ps2_state.Rocker_RX / 128;
+            velocity.velocity.linear_x = 0.3f * ps2_state.Rocker_LY / 128;
+            velocity.velocity.angular_z = -1.0f * ps2_state.Rocker_RX / 128;
             vel_mux_set_velocity(velocity);
             LOS_TaskDelay(50);
         } else {
             LOS_TaskDelay(1000);
         }
     }
+
+    return NULL;
 }
 
 static void* kinematics_task(uint32_t arg) {
@@ -112,6 +117,8 @@ static void* kinematics_task(uint32_t arg) {
 
         LOS_TaskDelay(50);
     }
+
+    return NULL;
 }
 
 static void* ultrasonic_task(uint32_t arg) {
@@ -120,6 +127,8 @@ static void* ultrasonic_task(uint32_t arg) {
         ultrasonic_update_range();
         LOS_TaskDelay(50);
     }
+
+    return NULL;
 }
 
 static void* imu_task(uint32_t arg) {
@@ -137,6 +146,8 @@ static void* imu_task(uint32_t arg) {
 
         LOS_TaskDelay(10);
     }
+
+    return NULL;
 }
 
 static void* battery_voltage_task(uint32_t arg) {
@@ -145,6 +156,8 @@ static void* battery_voltage_task(uint32_t arg) {
         battery_voltage_update();
         LOS_TaskDelay(1000);
     }
+
+    return NULL;
 }
 
 static void create_task(uint32_t* task_id,

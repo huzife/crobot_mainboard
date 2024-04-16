@@ -176,7 +176,7 @@ void icm42605_init() {
 void icm42605_update_temperature() {
     uint8_t buf[2] = {0};
     read_regs(ICM42605_TEMP_DATA1, buf, 2);
-    float temperature = (int16_t)((buf[0] << 8) | buf[1]) / 132.48 + 25;
+    float temperature = (int16_t)((buf[0] << 8) | buf[1]) / 132.48f + 25;
     LOS_AtomicSet((Atomic*)&imu_temperature, *(int*)&temperature);
 }
 

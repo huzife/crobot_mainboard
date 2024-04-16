@@ -13,12 +13,12 @@
 #endif
 
 /// @brief Update odometry
-void kinematics_update_odometry(Odometry* odometry, Velocity velocity, double dt);
+void kinematics_update_odometry(Odometry* odometry, Velocity velocity, float dt);
 
 /// @brief Calculate target motor speed
-void kinematics_inverse_func(Velocity velocity, double speeds[]);
+void kinematics_inverse_func(Velocity velocity, float speeds[]);
 
 /// @brief Calculate current motor velocity
-void kinematics_forward_func(double speeds[], Velocity* velocity);
+void kinematics_forward_func(float speeds[], Velocity* velocity);
 
 #endif // USER_KINEMATICS_IMPL_H

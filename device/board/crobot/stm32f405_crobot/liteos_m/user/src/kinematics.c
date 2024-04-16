@@ -23,15 +23,17 @@ static uint32_t odometry_mtx;
 static volatile int velocity_avaliable;
 static uint32_t last_tick;
 
-static double linear_factor;
-static double angular_factor;
-static double pid_interval;
+static float linear_factor;
+static float angular_factor;
+static float pid_interval;
+
 const uint32_t CPR = 1580;
+const float PI = M_PI;
 
 inline static void kinematics_struct_init(Kinematics* k) {
-    k->velocity.linear_x = 0.0;
-    k->velocity.linear_y = 0.0;
-    k->velocity.angular_z = 0.0;
+    k->velocity.linear_x = 0.0f;
+    k->velocity.linear_y = 0.0f;
+    k->velocity.angular_z = 0.0f;
     k->speeds = (int16_t*)LOS_MemAlloc(mem_pool, WHEEL_NUM * 2);
     for (int i = 0; i < WHEEL_NUM; i++) {
         k->speeds[i] = 0;
@@ -44,19 +46,19 @@ void kinematics_init() {
     LOS_MuxCreate(&odometry_mtx);
     last_tick = LOS_TickCountGet();
     velocity_avaliable = 0;
-    linear_factor = 1.0;
-    angular_factor = 1.0;
-    pid_interval = 0.05;
+    linear_factor = 1.0f;
+    angular_factor = 1.0f;
+    pid_interval = 0.05f;
 
     kinematics_struct_init(&k_inverse);
     kinematics_struct_init(&k_forward);
-    odometry.position_x = 0.0;
-    odometry.position_y = 0.0;
-    odometry.direction = 0.0;
+    odometry.position_x = 0.0f;
+    odometry.position_y = 0.0f;
+    odometry.direction = 0.0f;
 
-    velocity_sum.linear_x = 0.0;
-    velocity_sum.linear_y = 0.0;
-    velocity_sum.angular_z = 0.0;
+    velocity_sum.linear_x = 0.0f;
+    velocity_sum.linear_y = 0.0f;
+    velocity_sum.angular_z = 0.0f;
     velocity_index = 0;
     is_window_full = false;
 }
@@ -89,15 +91,15 @@ inline static void correct_current_velocity(Velocity* velocity) {
     velocity->angular_z *= angular_factor;
 }
 
-inline static void set_target_speed(double speeds[]) {
+inline static void set_target_speed(float speeds[]) {
     for (int i = 0; i < WHEEL_NUM; i++) {
-        k_inverse.speeds[i] = speeds[i] * pid_interval * CPR / (2 * M_PI);
+        k_inverse.speeds[i] = speeds[i] * pid_interval * CPR / (2 * PI);
     }
 }
 
-inline static void get_current_speed(double speeds[]) {
+inline static void get_current_speed(float speeds[]) {
     for (int i = 0; i < WHEEL_NUM; i++) {
-        speeds[i] = (double)k_forward.speeds[i] / pid_interval / CPR * (2 * M_PI);
+        speeds[i] = (float)k_forward.speeds[i] / pid_interval / CPR * (2 * PI);
     }
 }
 
@@ -106,7 +108,7 @@ void kinematics_handle_velocity() {
         return;
 
     Velocity velocity;
-    double speeds[WHEEL_NUM];
+    float speeds[WHEEL_NUM];
 
     LOS_MuxPend(target_velocity_mtx, 50);
     velocity = k_inverse.velocity;
@@ -142,12 +144,12 @@ static void kinematics_rolling_mean(Velocity* velocity) {
     velocity->linear_x = velocity_sum.linear_x / size;
     velocity->linear_y = velocity_sum.linear_y / size;
     velocity->angular_z = velocity_sum.angular_z / size;
-    if (fabs(velocity->linear_x) < 1e-6)
-        velocity->linear_x = 0.0;
-    if (fabs(velocity->linear_y) < 1e-6)
-        velocity->linear_y = 0.0;
-    if (fabs(velocity->angular_z) < 1e-6)
-        velocity->angular_z = 0.0;
+    if (fabsf(velocity->linear_x) < 1e-6f)
+        velocity->linear_x = 0.0f;
+    if (fabsf(velocity->linear_y) < 1e-6f)
+        velocity->linear_y = 0.0f;
+    if (fabsf(velocity->angular_z) < 1e-6f)
+        velocity->angular_z = 0.0f;
 }
 
 void kinematics_update_info() {
@@ -155,7 +157,7 @@ void kinematics_update_info() {
         return;
 
     Velocity velocity;
-    double speeds[WHEEL_NUM];
+    float speeds[WHEEL_NUM];
 
     get_current_speed(speeds);
     kinematics_forward_func(speeds, &velocity);
@@ -165,7 +167,7 @@ void kinematics_update_info() {
     Odometry odom = odometry;
     LOS_MuxPost(odometry_mtx);
     uint32_t cur_tick = LOS_TickCountGet();
-    double dt = LOS_Tick2MS(cur_tick - last_tick) / 1000.0;
+    float dt = LOS_Tick2MS(cur_tick - last_tick) / 1000.0f;
     last_tick = cur_tick;
     kinematics_update_odometry(&odom, velocity, dt);
     kinematics_rolling_mean(&velocity);

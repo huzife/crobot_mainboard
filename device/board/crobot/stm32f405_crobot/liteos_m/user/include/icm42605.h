@@ -4,12 +4,12 @@
 #include <stdint.h>
 
 typedef struct {
-    volatile float accel_x;
-    volatile float accel_y;
-    volatile float accel_z;
-    volatile float angular_x;
-    volatile float angular_y;
-    volatile float angular_z;
+    float accel_x;
+    float accel_y;
+    float accel_z;
+    float angular_x;
+    float angular_y;
+    float angular_z;
 } IMU_Data;
 
 /// @brief Init icm42605

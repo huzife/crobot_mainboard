@@ -35,7 +35,6 @@ kernel_module(module_name) {
     ]
 }
 
-#指定全局头文件搜索路径
 config("public") {
     include_dirs = [
         ".",

@@ -1,5 +1,4 @@
 #include "ps2.h"
-#include "stm32f4xx_hal.h"
 #include "los_tick.h"
 
 #define PS2_CS_LOW() HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET)

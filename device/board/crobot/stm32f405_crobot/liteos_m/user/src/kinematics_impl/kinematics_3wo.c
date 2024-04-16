@@ -3,40 +3,41 @@
 #include <math.h>
 #include <stdbool.h>
 
-const double RADIUS = 0.0325;
-const double DISTANCE = 0.172;
+const float SQRT3 = M_SQRT3;
+const float RADIUS = 0.0325f;
+const float DISTANCE = 0.172f;
 
-void kinematics_update_odometry(Odometry* odometry, Velocity velocity, double dt) {
-    double dx = velocity.linear_x * dt;
-    double dy = velocity.linear_y * dt;
-    double dyaw = velocity.angular_z * dt;
+void kinematics_update_odometry(Odometry* odometry, Velocity velocity, float dt) {
+    float dx = velocity.linear_x * dt;
+    float dy = velocity.linear_y * dt;
+    float dyaw = velocity.angular_z * dt;
 
-    double dir = odometry->direction;
-    odometry->position_x += dx * cos(dir) - dy * sin(dir);
-    odometry->position_y += dx * sin(dir) + dy * cos(dir);
+    float dir = odometry->direction;
+    odometry->position_x += dx * cosf(dir) - dy * sinf(dir);
+    odometry->position_y += dx * sinf(dir) + dy * cosf(dir);
     odometry->direction += dyaw;
 }
 
-void kinematics_inverse_func(Velocity velocity, double speeds[]) {
-    double linear_x = velocity.linear_x;
-    double linear_y = velocity.linear_y;
-    double angular = velocity.angular_z;
+void kinematics_inverse_func(Velocity velocity, float speeds[]) {
+    float linear_x = velocity.linear_x;
+    float linear_y = velocity.linear_y;
+    float angular = velocity.angular_z;
 
     // rotate speed of each wheel, rad/s
-    double v = angular * DISTANCE;
-    speeds[0] = v - linear_x * M_SQRT3 / 2 + linear_y / 2;
+    float v = angular * DISTANCE;
+    speeds[0] = v - linear_x * SQRT3 / 2 + linear_y / 2;
     speeds[1] = v - linear_y;
-    speeds[2] = v + linear_x * M_SQRT3 / 2 + linear_y / 2;
+    speeds[2] = v + linear_x * SQRT3 / 2 + linear_y / 2;
 }
 
-void kinematics_forward_func(double speeds[], Velocity* velocity) {
+void kinematics_forward_func(float speeds[], Velocity* velocity) {
     // rotate speed
-    double speed_left = speeds[0];
-    double speed_back = speeds[1];
-    double speed_right = speeds[2];
+    float speed_left = speeds[0];
+    float speed_back = speeds[1];
+    float speed_right = speeds[2];
 
     // linear and angular
-    velocity->linear_x = (speed_right - speed_left) / M_SQRT3;
+    velocity->linear_x = (speed_right - speed_left) / SQRT3;
     velocity->linear_y = (speed_left - 2 * speed_back + speed_right) / 3;
     velocity->angular_z = (speed_left + speed_back + speed_right) / 3;
 }

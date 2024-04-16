@@ -48,7 +48,7 @@ void battery_voltage_init() {
     adc_value_index = 0;
     adc_value_sum = 0;
     is_window_full = false;
-    battery_voltage = 0.0;
+    battery_voltage = 0.0f;
 }
 
 float battery_get_voltage() {
@@ -74,7 +74,7 @@ static void battery_voltage_rolling_mean(uint32_t value) {
     uint32_t size = is_window_full ? BATTERY_VOLTAGE_WINDOW_SIZE
                                    : adc_value_index;
     float adc_value = (float)adc_value_sum / size;
-    float voltage = adc_value * 3.3 * (133.0 / 33.0) / ((1 << 12) - 1);
+    float voltage = adc_value * 3.3f * (133.0f / 33.0f) / ((1 << 12) - 1);
     LOS_AtomicSet((Atomic*)&battery_voltage, *(int*)&voltage);
 }
 
