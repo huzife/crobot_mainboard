@@ -1,5 +1,12 @@
 #include "battery_voltage.h"
 #include "los_atomic.h"
+#include <stdbool.h>
+
+#define BATTERY_VOLTAGE_WINDOW_SIZE 8
+static uint32_t adc_value_accu[BATTERY_VOLTAGE_WINDOW_SIZE];
+static uint32_t adc_value_sum;
+static uint32_t adc_value_index;
+static bool is_window_full;
 
 static ADC_HandleTypeDef battery_voltage_adc;
 static float battery_voltage;
@@ -38,6 +45,9 @@ static void battery_voltage_adc_init() {
 
 void battery_voltage_init() {
     battery_voltage_adc_init();
+    adc_value_index = 0;
+    adc_value_sum = 0;
+    is_window_full = false;
     battery_voltage = 0.0;
 }
 
@@ -47,10 +57,29 @@ float battery_get_voltage() {
     return *(float*)&voltage;
 }
 
+static void battery_voltage_rolling_mean(uint32_t value) {
+    if (is_window_full)
+        adc_value_sum -= adc_value_accu[adc_value_index];
+
+    adc_value_sum += value;
+    adc_value_accu[adc_value_index++] = value;
+
+    if (adc_value_index == BATTERY_VOLTAGE_WINDOW_SIZE) {
+        adc_value_index = 0;
+        if (!is_window_full)
+            is_window_full = true;
+    }
+
+    // calculate and set battery_voltage
+    uint32_t size = is_window_full ? BATTERY_VOLTAGE_WINDOW_SIZE
+                                   : adc_value_index;
+    float adc_value = (float)adc_value_sum / size;
+    float voltage = adc_value * 3.3 * (133.0 / 33.0) / ((1 << 12) - 1);
+    LOS_AtomicSet((Atomic*)&battery_voltage, *(int*)&voltage);
+}
+
 void battery_voltage_update() {
     HAL_ADC_Start(&battery_voltage_adc);
     HAL_ADC_PollForConversion(&battery_voltage_adc, 1000);
-    uint32_t adc_value = HAL_ADC_GetValue(&battery_voltage_adc);
-    float voltage = adc_value * 3.3 * (133.0 / 33.0) / ((1 << 12) - 1);
-    LOS_AtomicSet((Atomic*)&battery_voltage, *(int*)&voltage);
+    battery_voltage_rolling_mean(HAL_ADC_GetValue(&battery_voltage_adc));
 }

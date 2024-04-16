@@ -8,6 +8,12 @@
 #include <math.h>
 #include <stdbool.h>
 
+#define KINEMATICS_WINDOW_SIZE 4
+static Velocity velocity_accu[KINEMATICS_WINDOW_SIZE];
+static Velocity velocity_sum;
+static uint32_t velocity_index;
+static bool is_window_full;
+
 static Kinematics k_inverse;
 static Kinematics k_forward;
 static Odometry odometry;
@@ -47,6 +53,12 @@ void kinematics_init() {
     odometry.position_x = 0.0;
     odometry.position_y = 0.0;
     odometry.direction = 0.0;
+
+    velocity_sum.linear_x = 0.0;
+    velocity_sum.linear_y = 0.0;
+    velocity_sum.angular_z = 0.0;
+    velocity_index = 0;
+    is_window_full = false;
 }
 
 void kinematics_get_odometry_and_velocity(Odometry* odom, Velocity* vel) {
@@ -106,6 +118,38 @@ void kinematics_handle_velocity() {
     modbus_set_holding_regs(0, 1, 0, (uint16_t*)k_inverse.speeds, WHEEL_NUM);
 }
 
+static void kinematics_rolling_mean(Velocity* velocity) {
+    if (is_window_full) {
+        velocity_sum.linear_x -= velocity_accu[velocity_index].linear_x;
+        velocity_sum.linear_y -= velocity_accu[velocity_index].linear_y;
+        velocity_sum.angular_z -= velocity_accu[velocity_index].angular_z;
+    }
+
+    velocity_sum.linear_x += velocity->linear_x;
+    velocity_sum.linear_y += velocity->linear_y;
+    velocity_sum.angular_z += velocity->angular_z;
+    velocity_accu[velocity_index] = *velocity;
+
+    if (++velocity_index == KINEMATICS_WINDOW_SIZE) {
+        velocity_index = 0;
+        if (!is_window_full)
+            is_window_full = true;
+    }
+
+    // calculate the mean of velocity
+    uint32_t size = is_window_full ? KINEMATICS_WINDOW_SIZE
+                                   : velocity_index;
+    velocity->linear_x = velocity_sum.linear_x / size;
+    velocity->linear_y = velocity_sum.linear_y / size;
+    velocity->angular_z = velocity_sum.angular_z / size;
+    if (fabs(velocity->linear_x) < 1e-6)
+        velocity->linear_x = 0.0;
+    if (fabs(velocity->linear_y) < 1e-6)
+        velocity->linear_y = 0.0;
+    if (fabs(velocity->angular_z) < 1e-6)
+        velocity->angular_z = 0.0;
+}
+
 void kinematics_update_info() {
     if (!modbus_get_input_regs(0, 1, 0, WHEEL_NUM, (uint16_t*)k_forward.speeds))
         return;
@@ -124,6 +168,7 @@ void kinematics_update_info() {
     double dt = LOS_Tick2MS(cur_tick - last_tick) / 1000.0;
     last_tick = cur_tick;
     kinematics_update_odometry(&odom, velocity, dt);
+    kinematics_rolling_mean(&velocity);
 
     // set current velocity at the same time
     LOS_MuxPend(current_velocity_mtx, 50);
