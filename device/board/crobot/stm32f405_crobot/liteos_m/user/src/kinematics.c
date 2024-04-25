@@ -8,7 +8,7 @@
 #include <math.h>
 #include <stdbool.h>
 
-#define WHEEL_SPEED_SCALE 10000.0f
+#define WHEEL_SPEED_SCALE 1000.0f
 #define KINEMATICS_WINDOW_SIZE 4
 const float PI = M_PI;
 
