@@ -4,8 +4,8 @@
 #include <stdbool.h>
 
 const float SQRT3 = M_SQRT3;
-const float RADIUS = 0.0325f;
-const float DISTANCE = 0.172f;
+const float RADIUS = LOSCFG_ROBOT_BASE_3WO_RADIUS / 10000.0f;
+const float DISTANCE = LOSCFG_ROBOT_BASE_3WO_DISTANCE / 10000.0f;
 
 void kinematics_update_odometry(Odometry* odometry, Velocity velocity, float dt) {
     float dx = velocity.linear_x * dt;

@@ -8,7 +8,10 @@
 #include <math.h>
 #include <stdbool.h>
 
+#define WHEEL_SPEED_SCALE 10000.0f
 #define KINEMATICS_WINDOW_SIZE 4
+const float PI = M_PI;
+
 static Velocity velocity_accu[KINEMATICS_WINDOW_SIZE];
 static Velocity velocity_sum;
 static uint32_t velocity_index;
@@ -20,15 +23,11 @@ static Odometry odometry;
 static uint32_t target_velocity_mtx;
 static uint32_t current_velocity_mtx;
 static uint32_t odometry_mtx;
-static volatile int velocity_avaliable;
 static uint32_t last_tick;
 
-static float linear_factor;
-static float angular_factor;
-static float pid_interval;
-
-const uint32_t CPR = 1580;
-const float PI = M_PI;
+static volatile int velocity_avaliable;
+static volatile float linear_factor;
+static volatile float angular_factor;
 
 inline static void kinematics_struct_init(Kinematics* k) {
     k->velocity.linear_x = 0.0f;
@@ -48,7 +47,6 @@ void kinematics_init() {
     velocity_avaliable = 0;
     linear_factor = 1.0f;
     angular_factor = 1.0f;
-    pid_interval = 0.05f;
 
     kinematics_struct_init(&k_inverse);
     kinematics_struct_init(&k_forward);
@@ -72,6 +70,19 @@ void kinematics_get_odometry_and_velocity(Odometry* odom, Velocity* vel) {
     LOS_MuxPost(current_velocity_mtx);
 }
 
+void kinematics_reset_odometry() {
+    LOS_MuxPend(odometry_mtx, 50);
+    odometry.direction = 0.0f;
+    odometry.position_x = 0.0f;
+    odometry.position_y = 0.0f;
+    LOS_MuxPost(odometry_mtx);
+}
+
+void kinematics_set_correction_factor(float linear, float angular) {
+    linear_factor = linear;
+    angular_factor = angular;
+}
+
 void kinematics_set_target_velocity(Velocity velocity) {
     LOS_MuxPend(target_velocity_mtx, 50);
     k_inverse.velocity = velocity;
@@ -93,13 +104,13 @@ inline static void correct_current_velocity(Velocity* velocity) {
 
 inline static void set_target_speed(float speeds[]) {
     for (int i = 0; i < WHEEL_NUM; i++) {
-        k_inverse.speeds[i] = speeds[i] * pid_interval * CPR / (2 * PI);
+        k_inverse.speeds[i] = speeds[i] * WHEEL_SPEED_SCALE;
     }
 }
 
 inline static void get_current_speed(float speeds[]) {
     for (int i = 0; i < WHEEL_NUM; i++) {
-        speeds[i] = (float)k_forward.speeds[i] / pid_interval / CPR * (2 * PI);
+        speeds[i] = k_forward.speeds[i] / WHEEL_SPEED_SCALE;
     }
 }
 

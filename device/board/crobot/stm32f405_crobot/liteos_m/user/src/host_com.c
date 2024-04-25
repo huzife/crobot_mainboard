@@ -3,6 +3,7 @@
 #include "icm42605.h"
 #include "kinematics.h"
 #include "mem_pool.h"
+#include "modbus_rtu.h"
 #include "swsr_queue.h"
 #include "vel_mux.h"
 #include "ultrasonic.h"
@@ -24,8 +25,12 @@ static EVENT_CB_S host_com_event;
 static Velocity_Message host_com_velocity;
 
 typedef enum {
+    SET_PID_INTERVAL,
+    SET_COUNT_PER_REV,
+    SET_CORRECTION_FACTOR,
     SET_VELOCITY,
     GET_ODOMETRY,
+    RESET_ODOMETRY,
     GET_IMU_TEMPERATURE,
     GET_IMU_DATA,
     GET_ULTRASONIC_RANGE,
@@ -73,15 +78,51 @@ inline static void hex_to_float(uint8_t* hex, float* val) {
     *val = fh.val;
 }
 
+static bool set_pid_interval_func() {
+    if (DATA_LEN != 3)
+        return false;
+
+    DATA_LEN = 0;
+    uint16_t val = ((*DATA_START) << 8) | *(DATA_START + 1);
+    modbus_set_holding_reg(0, 1, 0x13, val);
+
+    return true;
+}
+
+static bool set_count_per_rev_func() {
+    if (DATA_LEN != 3)
+        return false;
+
+    DATA_LEN = 0;
+    uint16_t val = ((*DATA_START) << 8) | *(DATA_START + 1);
+    modbus_set_holding_reg(0, 1, 0x14, val);
+
+    return true;
+}
+
+static bool set_correction_factor_func() {
+    if (DATA_LEN != 9)
+        return false;
+
+    DATA_LEN = 0;
+    float linear;
+    float angular;
+    hex_to_float(DATA_START, &linear);
+    hex_to_float(DATA_START + 4, &angular);
+    kinematics_set_correction_factor(linear, angular);
+
+    return true;
+}
+
 static bool set_velocity_func() {
     if (DATA_LEN != 13)
         return false;
 
+    DATA_LEN = 0;
     hex_to_float(DATA_START, &host_com_velocity.velocity.linear_x);
     hex_to_float(DATA_START + 4, &host_com_velocity.velocity.linear_y);
     hex_to_float(DATA_START + 8, &host_com_velocity.velocity.angular_z);
     vel_mux_set_velocity(host_com_velocity);
-    DATA_LEN = 0;
 
     return true;
 }
@@ -100,6 +141,16 @@ static bool get_odometry_func() {
     float_to_hex(odometry.position_x, DATA_START + 12);
     float_to_hex(odometry.position_y, DATA_START + 16);
     float_to_hex(odometry.direction, DATA_START + 20);
+
+    return true;
+}
+
+static bool reset_odometry_func() {
+    if (DATA_LEN != 1)
+        return false;
+
+    DATA_LEN = 0;
+    kinematics_reset_odometry();
 
     return true;
 }
@@ -160,12 +211,28 @@ static void host_com_process() {
 
     bool ret;
     switch ((Message_Type)MESSAGE_TYPE) {
+        case SET_PID_INTERVAL:
+            ret = set_pid_interval_func();
+            break;
+
+        case SET_COUNT_PER_REV:
+            ret = set_count_per_rev_func();
+            break;
+
+        case SET_CORRECTION_FACTOR:
+            ret = set_correction_factor_func();
+            break;
+
         case SET_VELOCITY:
             ret = set_velocity_func();
             break;
 
         case GET_ODOMETRY:
             ret = get_odometry_func();
+            break;
+
+        case RESET_ODOMETRY:
+            ret = reset_odometry_func();
             break;
 
         case GET_IMU_TEMPERATURE:

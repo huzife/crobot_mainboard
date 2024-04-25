@@ -3,8 +3,8 @@
 #include <math.h>
 #include <stdbool.h>
 
-const float RADIUS = 0.0325f;
-const float SEPARATION = 0.172f;
+const float RADIUS = LOSCFG_ROBOT_BASE_2WD_RADIUS / 10000.0f;
+const float SEPARATION = LOSCFG_ROBOT_BASE_2WD_SEPARATION / 10000.0f;
 
 void kinematics_update_odometry(Odometry* odometry, Velocity velocity, float dt) {
     float dx = velocity.linear_x * dt;

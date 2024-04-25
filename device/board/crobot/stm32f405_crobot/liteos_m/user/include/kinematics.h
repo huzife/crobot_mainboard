@@ -16,6 +16,12 @@ void kinematics_init();
 /// @brief Get current wheel odometry
 void kinematics_get_odometry_and_velocity(Odometry* odom, Velocity* vel);
 
+/// @brief Reset odometry
+void kinematics_reset_odometry();
+
+/// @brief Set linear and angular correction factor
+void kinematics_set_correction_factor(float linear, float angular);
+
 /// @brief Set target velocity
 /// @param[in] velocity Target velocity
 void kinematics_set_target_velocity(Velocity velocity);

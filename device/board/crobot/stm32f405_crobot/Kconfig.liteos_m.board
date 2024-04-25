@@ -11,11 +11,48 @@ choice ROBOT_BASE_CONFIG
 config ROBOT_BASE_2WD
     bool "two-wheel differential"
 
+config ROBOT_BASE_2WD_RADIUS
+    int "wheel radius(0.1mm)"
+    range 1 10000
+    default 325
+    depends on ROBOT_BASE_2WD
+
+config ROBOT_BASE_2WD_SEPARATION
+    int "wheel separation(0.1mm)"
+    range 1 10000
+    default 1720
+    depends on ROBOT_BASE_2WD
+
 config ROBOT_BASE_4WD
     bool "four-wheel differential"
 
+config ROBOT_BASE_4WD_RADIUS
+    int "wheel radius(0.1mm)"
+    range 1 10000
+    default 325
+    depends on ROBOT_BASE_4WD
+
+
+config ROBOT_BASE_4WD_SEPARATION
+    int "wheel separation(0.1mm)"
+    range 1 10000
+    default 1720
+    depends on ROBOT_BASE_4WD
+
 config ROBOT_BASE_3WO
     bool "three-wheel omnidirectional"
+
+config ROBOT_BASE_3WO_RADIUS
+    int "wheel radius(0.1mm)"
+    range 1 10000
+    default 325
+    depends on ROBOT_BASE_3WO
+
+config ROBOT_BASE_3WO_DISTANCE
+    int "distance from wheel to center(0.1mm)"
+    range 1 10000
+    default 1720
+    depends on ROBOT_BASE_3WO
 
 endchoice # ROBOT_BASE_CONFIG
 

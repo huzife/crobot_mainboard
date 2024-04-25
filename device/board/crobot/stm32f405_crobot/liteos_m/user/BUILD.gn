@@ -16,21 +16,11 @@ kernel_module(module_name) {
         "src/vel_mux.c"
     ]
 
-    if (defined(LOSCFG_ROBOT_BASE_2WD)) {
-        sources += [
-            "src/kinematics_impl/kinematics_2wd.c"
-        ]
-    }
-    if (defined(LOSCFG_ROBOT_BASE_4WD)) {
-        sources += [
-            "src/kinematics_impl/kinematics_4wd.c"
-        ]
-    }
-    if (defined(LOSCFG_ROBOT_BASE_3WO)) {
-        sources += [
-            "src/kinematics_impl/kinematics_3wo.c"
-        ]
-    }
+    sources += [
+        "src/kinematics_impl/kinematics_2wd.c",
+        "src/kinematics_impl/kinematics_3wo.c",
+        "src/kinematics_impl/kinematics_4wd.c"
+    ]
 
     include_dirs = [
         "include"
