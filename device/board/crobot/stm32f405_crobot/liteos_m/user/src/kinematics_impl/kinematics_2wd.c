@@ -1,12 +1,13 @@
-#ifdef LOSCFG_ROBOT_BASE_2WD
-#include "kinematics_impl.h"
+#include "kinematics_impl/kinematics_2wd.h"
 #include <math.h>
-#include <stdbool.h>
 
-const float RADIUS = LOSCFG_ROBOT_BASE_2WD_RADIUS / 10000.0f;
-const float SEPARATION = LOSCFG_ROBOT_BASE_2WD_SEPARATION / 10000.0f;
+static Kinematics_2WD_Param kinematics_param;
 
-void kinematics_update_odometry(Odometry* odometry, Velocity velocity, float dt) {
+void kinematics_set_param_2wd(Kinematics_2WD_Param param) {
+    kinematics_param = param;
+}
+
+void kinematics_update_odometry_2wd(Odometry* odometry, Velocity velocity, float dt) {
     float dx = velocity.linear_x * dt;
     float dyaw = velocity.angular_z * dt;
 
@@ -24,23 +25,27 @@ void kinematics_update_odometry(Odometry* odometry, Velocity velocity, float dt)
     }
 }
 
-void kinematics_inverse_func(Velocity velocity, float speeds[]) {
+void kinematics_inverse_2wd(Velocity velocity, float speeds[]) {
+    float radius = kinematics_param.radius;
+    float separation = kinematics_param.separation;
     float linear = velocity.linear_x;
     float angular = velocity.angular_z;
 
     // rotate speed of each wheel, rad/s
-    speeds[0] = (angular * SEPARATION / 2 - linear) / RADIUS;
-    speeds[1] = (angular * SEPARATION / 2 + linear) / RADIUS;
+    speeds[0] = (angular * separation / 2 - linear) / radius;
+    speeds[1] = (angular * separation / 2 + linear) / radius;
 }
 
-void kinematics_forward_func(float speeds[], Velocity* velocity) {
+void kinematics_forward_2wd(float speeds[], Velocity* velocity) {
+    float radius = kinematics_param.radius;
+    float separation = kinematics_param.separation;
+
     // rotate speed
     float speed_left = speeds[0];
     float speed_right = speeds[1];
 
     // linear and angular
-    velocity->linear_x = (RADIUS * (speed_right - speed_left)) / 2;
+    velocity->linear_x = (radius * (speed_right - speed_left)) / 2;
     velocity->linear_y = 0.0f;
-    velocity->angular_z = (RADIUS * (speed_right + speed_left)) / SEPARATION;
+    velocity->angular_z = (radius * (speed_right + speed_left)) / separation;
 }
-#endif

@@ -1,13 +1,15 @@
-#ifdef LOSCFG_ROBOT_BASE_3WO
-#include "kinematics_impl.h"
+#include "kinematics_impl/kinematics_3wo.h"
 #include <math.h>
-#include <stdbool.h>
 
 const float SQRT3 = M_SQRT3;
-const float RADIUS = LOSCFG_ROBOT_BASE_3WO_RADIUS / 10000.0f;
-const float DISTANCE = LOSCFG_ROBOT_BASE_3WO_DISTANCE / 10000.0f;
 
-void kinematics_update_odometry(Odometry* odometry, Velocity velocity, float dt) {
+static Kinematics_3WO_Param kinematics_param;
+
+void kinematics_set_param_3wo(Kinematics_3WO_Param param) {
+    kinematics_param = param;
+}
+
+void kinematics_update_odometry_3wo(Odometry* odometry, Velocity velocity, float dt) {
     float dx = velocity.linear_x * dt;
     float dy = velocity.linear_y * dt;
     float dyaw = velocity.angular_z * dt;
@@ -18,27 +20,31 @@ void kinematics_update_odometry(Odometry* odometry, Velocity velocity, float dt)
     odometry->direction += dyaw;
 }
 
-void kinematics_inverse_func(Velocity velocity, float speeds[]) {
+void kinematics_inverse_3wo(Velocity velocity, float speeds[]) {
+    float radius = kinematics_param.radius;
+    float distance = kinematics_param.distance;
     float linear_x = velocity.linear_x;
     float linear_y = velocity.linear_y;
     float angular = velocity.angular_z;
 
     // rotate speed of each wheel, rad/s
-    float v = angular * DISTANCE;
-    speeds[0] = v - linear_x * SQRT3 / 2 + linear_y / 2;
-    speeds[1] = v - linear_y;
-    speeds[2] = v + linear_x * SQRT3 / 2 + linear_y / 2;
+    float v = angular * distance;
+    speeds[0] = (v - linear_x * SQRT3 / 2 + linear_y / 2) / radius;
+    speeds[1] = (v - linear_y) / radius;
+    speeds[2] = (v + linear_x * SQRT3 / 2 + linear_y / 2) / radius;
 }
 
-void kinematics_forward_func(float speeds[], Velocity* velocity) {
+void kinematics_forward_3wo(float speeds[], Velocity* velocity) {
+    float radius = kinematics_param.radius;
+    float distance = kinematics_param.distance;
+
     // rotate speed
     float speed_left = speeds[0];
     float speed_back = speeds[1];
     float speed_right = speeds[2];
 
     // linear and angular
-    velocity->linear_x = (speed_right - speed_left) / SQRT3;
-    velocity->linear_y = (speed_left - 2 * speed_back + speed_right) / 3;
-    velocity->angular_z = (speed_left + speed_back + speed_right) / 3;
+    velocity->linear_x = (speed_right - speed_left) * radius / SQRT3;
+    velocity->linear_y = (speed_left - 2 * speed_back + speed_right) * radius / 3;
+    velocity->angular_z = (speed_left + speed_back + speed_right) * radius / 3 / distance;
 }
-#endif

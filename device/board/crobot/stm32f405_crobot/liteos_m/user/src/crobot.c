@@ -112,8 +112,11 @@ static void* kinematics_task(uint32_t arg) {
     }
 
     while (true) {
-        kinematics_update_info();
-        kinematics_handle_velocity();
+        if (kinematics_start()) {
+            kinematics_update_info();
+            kinematics_handle_velocity();
+            kinematics_end();
+        }
 
         LOS_TaskDelay(50);
     }

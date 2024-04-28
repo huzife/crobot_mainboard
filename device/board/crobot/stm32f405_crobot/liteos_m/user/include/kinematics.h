@@ -4,14 +4,23 @@
 #include "odometry.h"
 #include "velocity.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef struct {
     Velocity velocity;
     int16_t* speeds;
 } Kinematics;
 
+typedef enum {
+    KINEMATICS_ROBOT_BASE_2WD,
+    KINEMATICS_ROBOT_BASE_3WO,
+    KINEMATICS_ROBOT_BASE_4WD
+} Kinematics_Robot_Base;
+
 /// @brief Init kinematics mutex
 void kinematics_init();
+
+bool kinematics_set_robot_base(Kinematics_Robot_Base type, void* params, uint32_t size);
 
 /// @brief Get current wheel odometry
 void kinematics_get_odometry_and_velocity(Odometry* odom, Velocity* vel);
@@ -31,5 +40,9 @@ void kinematics_handle_velocity();
 
 /// @brief Update velocity and odom info
 void kinematics_update_info();
+
+bool kinematics_start();
+
+void kinematics_end();
 
 #endif // USER_KINEMATICS_H

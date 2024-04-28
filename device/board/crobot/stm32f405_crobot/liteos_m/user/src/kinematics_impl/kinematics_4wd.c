@@ -1,12 +1,13 @@
-#ifdef LOSCFG_ROBOT_BASE_4WD
-#include "kinematics_impl.h"
+#include "kinematics_impl/kinematics_4wd.h"
 #include <math.h>
-#include <stdbool.h>
 
-const float RADIUS = LOSCFG_ROBOT_BASE_4WD_RADIUS / 10000.0f;
-const float SEPARATION = LOSCFG_ROBOT_BASE_4WD_SEPARATION / 10000.0f;
+static Kinematics_4WD_Param kinematics_param;
 
-void kinematics_update_odometry(Odometry* odometry, Velocity velocity, float dt) {
+void kinematics_set_param_4wd(Kinematics_4WD_Param param) {
+    kinematics_param = param;
+}
+
+void kinematics_update_odometry_4wd(Odometry* odometry, Velocity velocity, float dt) {
     float dx = velocity.linear_x * dt;
     float dyaw = velocity.angular_z * dt;
 
@@ -24,13 +25,15 @@ void kinematics_update_odometry(Odometry* odometry, Velocity velocity, float dt)
     }
 }
 
-void kinematics_inverse_func(Velocity velocity, float speeds[]) {
+void kinematics_inverse_4wd(Velocity velocity, float speeds[]) {
+    float radius = kinematics_param.radius;
+    float separation = kinematics_param.separation;
     float linear = velocity.linear_x;
     float angular = velocity.angular_z;
 
     // rotate speed of each wheel, rad/s
-    float speed_left = (angular * SEPARATION / 2 - linear) / RADIUS;
-    float speed_right = (angular * SEPARATION / 2 + linear) / RADIUS;
+    float speed_left = (angular * separation / 2 - linear) / radius;
+    float speed_right = (angular * separation / 2 + linear) / radius;
 
     speeds[0] = speed_left;
     speeds[1] = speed_right;
@@ -38,14 +41,16 @@ void kinematics_inverse_func(Velocity velocity, float speeds[]) {
     speeds[3] = speed_right;
 }
 
-void kinematics_forward_func(float speeds[], Velocity* velocity) {
+void kinematics_forward_4wd(float speeds[], Velocity* velocity) {
+    float radius = kinematics_param.radius;
+    float separation = kinematics_param.separation;
+
     // rotate speed
     float speed_left = (speeds[0] + speeds[2]) / 2;
     float speed_right = (speeds[1] + speeds[3]) / 2;
 
     // linear and angular
-    velocity->linear_x = (RADIUS * (speed_right - speed_left)) / 2;
+    velocity->linear_x = (radius * (speed_right - speed_left)) / 2;
     velocity->linear_y = 0.0f;
-    velocity->angular_z = (RADIUS * (speed_right + speed_left)) / SEPARATION;
+    velocity->angular_z = (radius * (speed_right + speed_left)) / separation;
 }
-#endif

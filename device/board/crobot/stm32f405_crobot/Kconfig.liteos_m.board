@@ -8,6 +8,9 @@ menu "Device Configuration"
 choice ROBOT_BASE_CONFIG
     prompt "robot base config"
 
+config ROBOT_BASE_NONE
+    bool "configured by host"
+
 config ROBOT_BASE_2WD
     bool "two-wheel differential"
 

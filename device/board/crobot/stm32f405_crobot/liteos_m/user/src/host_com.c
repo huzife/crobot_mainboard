@@ -27,10 +27,11 @@ static Velocity_Message host_com_velocity;
 typedef enum {
     SET_PID_INTERVAL,
     SET_COUNT_PER_REV,
+    SET_ROBOT_BASE,
     SET_CORRECTION_FACTOR,
     SET_VELOCITY,
-    GET_ODOMETRY,
     RESET_ODOMETRY,
+    GET_ODOMETRY,
     GET_IMU_TEMPERATURE,
     GET_IMU_DATA,
     GET_ULTRASONIC_RANGE,
@@ -82,9 +83,9 @@ static bool set_pid_interval_func() {
     if (DATA_LEN != 3)
         return false;
 
-    DATA_LEN = 0;
     uint16_t val = ((*DATA_START) << 8) | *(DATA_START + 1);
     modbus_set_holding_reg(0, 1, 0x13, val);
+    DATA_LEN = 0;
 
     return true;
 }
@@ -93,23 +94,31 @@ static bool set_count_per_rev_func() {
     if (DATA_LEN != 3)
         return false;
 
-    DATA_LEN = 0;
     uint16_t val = ((*DATA_START) << 8) | *(DATA_START + 1);
     modbus_set_holding_reg(0, 1, 0x14, val);
+    DATA_LEN = 0;
 
     return true;
+}
+
+static bool set_robot_base_func() {
+    Kinematics_Robot_Base type = *(DATA_START);
+    bool ret = kinematics_set_robot_base(type, DATA_START + 1, DATA_LEN - 2);
+    DATA_LEN = 0;
+
+    return ret;
 }
 
 static bool set_correction_factor_func() {
     if (DATA_LEN != 9)
         return false;
 
-    DATA_LEN = 0;
     float linear;
     float angular;
     hex_to_float(DATA_START, &linear);
     hex_to_float(DATA_START + 4, &angular);
     kinematics_set_correction_factor(linear, angular);
+    DATA_LEN = 0;
 
     return true;
 }
@@ -118,11 +127,21 @@ static bool set_velocity_func() {
     if (DATA_LEN != 13)
         return false;
 
-    DATA_LEN = 0;
     hex_to_float(DATA_START, &host_com_velocity.velocity.linear_x);
     hex_to_float(DATA_START + 4, &host_com_velocity.velocity.linear_y);
     hex_to_float(DATA_START + 8, &host_com_velocity.velocity.angular_z);
     vel_mux_set_velocity(host_com_velocity);
+    DATA_LEN = 0;
+
+    return true;
+}
+
+static bool reset_odometry_func() {
+    if (DATA_LEN != 1)
+        return false;
+
+    kinematics_reset_odometry();
+    DATA_LEN = 0;
 
     return true;
 }
@@ -131,7 +150,6 @@ static bool get_odometry_func() {
     if (DATA_LEN != 1)
         return false;
 
-    DATA_LEN = 25;
     Velocity velocity;
     Odometry odometry;
     kinematics_get_odometry_and_velocity(&odometry, &velocity);
@@ -141,16 +159,7 @@ static bool get_odometry_func() {
     float_to_hex(odometry.position_x, DATA_START + 12);
     float_to_hex(odometry.position_y, DATA_START + 16);
     float_to_hex(odometry.direction, DATA_START + 20);
-
-    return true;
-}
-
-static bool reset_odometry_func() {
-    if (DATA_LEN != 1)
-        return false;
-
-    DATA_LEN = 0;
-    kinematics_reset_odometry();
+    DATA_LEN = 25;
 
     return true;
 }
@@ -159,8 +168,8 @@ static bool get_imu_temperature_func() {
     if (DATA_LEN != 1)
         return false;
 
-    DATA_LEN = 5;
     float_to_hex(icm42605_get_temperature(), DATA_START);
+    DATA_LEN = 5;
 
     return true;
 }
@@ -169,7 +178,6 @@ static bool get_imu_data_func() {
     if (DATA_LEN != 1)
         return false;
 
-    DATA_LEN = 25;
     IMU_Data imu_data = icm42605_get_data();
     float_to_hex(imu_data.accel_x, DATA_START);
     float_to_hex(imu_data.accel_y, DATA_START + 4);
@@ -177,6 +185,7 @@ static bool get_imu_data_func() {
     float_to_hex(imu_data.angular_x, DATA_START + 12);
     float_to_hex(imu_data.angular_y, DATA_START + 16);
     float_to_hex(imu_data.angular_z, DATA_START + 20);
+    DATA_LEN = 25;
 
     return true;
 }
@@ -185,10 +194,10 @@ static bool get_ultrasonic_range_func() {
     if (DATA_LEN != 1)
         return false;
 
-    DATA_LEN = 3;
     uint16_t range = ultrasonic_get_range();
     *(DATA_START) = range >> 8;
     *(DATA_START + 1) = range & 0xFF;
+    DATA_LEN = 3;
 
     return true;
 }
@@ -197,8 +206,8 @@ static bool get_battery_voltage_func() {
     if (DATA_LEN != 1)
         return false;
 
-    DATA_LEN = 5;
     float_to_hex(battery_get_voltage(), DATA_START);
+    DATA_LEN = 5;
 
     return true;
 }
@@ -219,6 +228,10 @@ static void host_com_process() {
             ret = set_count_per_rev_func();
             break;
 
+        case SET_ROBOT_BASE:
+            ret = set_robot_base_func();
+            break;
+
         case SET_CORRECTION_FACTOR:
             ret = set_correction_factor_func();
             break;
@@ -227,12 +240,12 @@ static void host_com_process() {
             ret = set_velocity_func();
             break;
 
-        case GET_ODOMETRY:
-            ret = get_odometry_func();
-            break;
-
         case RESET_ODOMETRY:
             ret = reset_odometry_func();
+            break;
+
+        case GET_ODOMETRY:
+            ret = get_odometry_func();
             break;
 
         case GET_IMU_TEMPERATURE:
