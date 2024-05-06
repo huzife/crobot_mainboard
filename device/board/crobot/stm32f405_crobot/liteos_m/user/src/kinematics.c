@@ -2,6 +2,7 @@
 #include "kinematics_impl/kinematics_2wd.h"
 #include "kinematics_impl/kinematics_3wo.h"
 #include "kinematics_impl/kinematics_4wd.h"
+#include "kinematics_impl/kinematics_4mec.h"
 #include "mem_pool.h"
 #include "modbus_rtu.h"
 #include "los_atomic.h"
@@ -11,6 +12,7 @@
 #include <math.h>
 #include <string.h>
 
+#define LOSCFG_CONFIG_RESOLUTION 0.1f
 #define WHEEL_SPEED_SCALE 1000.0f
 #define KINEMATICS_WINDOW_SIZE 4
 const float PI = M_PI;
@@ -30,7 +32,8 @@ static struct {
     uint32_t odometry_mtx;
     uint32_t last_tick;
     volatile int velocity_avaliable;
-    volatile float linear_factor;
+    volatile float linear_x_factor;
+    volatile float linear_y_factor;
     volatile float angular_factor;
     Kinematics_State state;
     uint32_t wheel_num;
@@ -47,7 +50,8 @@ static bool is_window_full;
 const uint32_t PARAM_SIZE[] = {
     sizeof(Kinematics_2WD_Param),
     sizeof(Kinematics_3WO_Param),
-    sizeof(Kinematics_4WD_Param)
+    sizeof(Kinematics_4WD_Param),
+    sizeof(Kinematics_4MEC_Param)
 };
 
 inline static void kinematics_alloc_speeds() {
@@ -82,8 +86,8 @@ static void kinematics_robot_base_init() {
     kinematics.inverse_func = kinematics_inverse_2wd;
     kinematics.forward_func = kinematics_forward_2wd;
     Kinematics_2WD_Param param;
-    param.radius = LOSCFG_ROBOT_BASE_2WD_RADIUS / 10000.0f;
-    param.separation = LOSCFG_ROBOT_BASE_2WD_SEPARATION / 10000.0f;
+    param.radius = LOSCFG_ROBOT_BASE_2WD_RADIUS * LOSCFG_CONFIG_RESOLUTION;
+    param.separation = LOSCFG_ROBOT_BASE_2WD_SEPARATION * LOSCFG_CONFIG_RESOLUTION;
     kinematics_set_param_2wd(param);
 #elif defined LOSCFG_ROBOT_BASE_3WO
     kinematics.wheel_num = 3;
@@ -91,8 +95,8 @@ static void kinematics_robot_base_init() {
     kinematics.inverse_func = kinematics_inverse_3wo;
     kinematics.forward_func = kinematics_forward_3wo;
     Kinematics_3WO_Param param;
-    param.radius = LOSCFG_ROBOT_BASE_3WO_RADIUS / 10000.0f;
-    param.distance = LOSCFG_ROBOT_BASE_3WO_DISTANCE / 10000.0f;
+    param.radius = LOSCFG_ROBOT_BASE_3WO_RADIUS * LOSCFG_CONFIG_RESOLUTION;
+    param.distance = LOSCFG_ROBOT_BASE_3WO_DISTANCE * LOSCFG_CONFIG_RESOLUTION;
     kinematics_set_param_3wo(param);
 #elif defined LOSCFG_ROBOT_BASE_4WD
     kinematics.wheel_num = 4;
@@ -100,9 +104,19 @@ static void kinematics_robot_base_init() {
     kinematics.inverse_func = kinematics_inverse_4wd;
     kinematics.forward_func = kinematics_forward_4wd;
     Kinematics_4WD_Param param;
-    param.radius = LOSCFG_ROBOT_BASE_4WD_RADIUS / 10000.0f;
-    param.separation = LOSCFG_ROBOT_BASE_4WD_SEPARATION / 10000.0f;
+    param.radius = LOSCFG_ROBOT_BASE_4WD_RADIUS * LOSCFG_CONFIG_RESOLUTION;
+    param.separation = LOSCFG_ROBOT_BASE_4WD_SEPARATION * LOSCFG_CONFIG_RESOLUTION;
     kinematics_set_param_4wd(param);
+#elif defined LOSCFG_ROBOT_BASE_4MEC
+    kinematics.wheel_num = 4;
+    kinematics.update_odometry_func = kinematics_update_odometry_4mec;
+    kinematics.inverse_func = kinematics_inverse_4mec;
+    kinematics.forward_func = kinematics_forward_4mec;
+    Kinematics_4MEC_Param param;
+    param.radius = LOSCFG_ROBOT_BASE_4MEC_RADIUS * LOSCFG_CONFIG_RESOLUTION;
+    param.distance_x = LOSCFG_ROBOT_BASE_4MEC_DISTANCE_X * LOSCFG_CONFIG_RESOLUTION;
+    param.distance_y = LOSCFG_ROBOT_BASE_4MEC_DISTANCE_Y * LOSCFG_CONFIG_RESOLUTION;
+    kinematics_set_param_4mec(param);
 #endif
     kinematics.state = KINEMATICS_READY;
 #endif
@@ -118,7 +132,8 @@ void kinematics_init() {
     LOS_MuxCreate(&kinematics.odometry_mtx);
     kinematics.last_tick = LOS_TickCountGet();
     kinematics.velocity_avaliable = 0;
-    kinematics.linear_factor = 1.0f;
+    kinematics.linear_x_factor = 1.0f;
+    kinematics.linear_y_factor = 1.0f;
     kinematics.angular_factor = 1.0f;
     kinematics_robot_base_init();
     kinematics.inverse.speeds = NULL;
@@ -134,8 +149,10 @@ void kinematics_init() {
 }
 
 bool kinematics_set_robot_base(Kinematics_Robot_Base type, void* params, uint32_t size) {
-    if (size != PARAM_SIZE[type])
+    if (size != PARAM_SIZE[type]) {
+        PRINT_ERR("size: %d, type: %d, paramsize: %d\n", size, type, PARAM_SIZE[type]);
         return false;
+    }
 
     // If it's not in invalid state, wait until it's ready and set state to invalid
     if (LOS_AtomicRead((const Atomic*)&kinematics.state)) {
@@ -172,6 +189,15 @@ bool kinematics_set_robot_base(Kinematics_Robot_Base type, void* params, uint32_
             memcpy(&param_4wd, params, size);
             kinematics_set_param_4wd(param_4wd);
             break;
+        case KINEMATICS_ROBOT_BASE_4MEC:
+            kinematics.wheel_num = 4;
+            kinematics.update_odometry_func = kinematics_update_odometry_4mec;
+            kinematics.inverse_func = kinematics_inverse_4mec;
+            kinematics.forward_func = kinematics_forward_4mec;
+            Kinematics_4MEC_Param param_4mec;
+            memcpy(&param_4mec, params, size);
+            kinematics_set_param_4mec(param_4mec);
+            break;
     }
     kinematics_alloc_speeds();
     LOS_AtomicSet((Atomic*)&kinematics.state, KINEMATICS_READY);
@@ -196,8 +222,9 @@ void kinematics_reset_odometry() {
     LOS_MuxPost(kinematics.odometry_mtx);
 }
 
-void kinematics_set_correction_factor(float linear, float angular) {
-    kinematics.linear_factor = linear;
+void kinematics_set_correction_factor(float linear_x, float linear_y, float angular) {
+    kinematics.linear_x_factor = linear_x;
+    kinematics.linear_y_factor = linear_y;
     kinematics.angular_factor = angular;
 }
 
@@ -209,14 +236,14 @@ void kinematics_set_target_velocity(Velocity velocity) {
 }
 
 inline static void correct_target_velocity(Velocity* velocity) {
-    velocity->linear_x /= kinematics.linear_factor;
-    velocity->linear_y /= kinematics.linear_factor;
+    velocity->linear_x /= kinematics.linear_x_factor;
+    velocity->linear_y /= kinematics.linear_y_factor;
     velocity->angular_z /= kinematics.angular_factor;
 }
 
 inline static void correct_current_velocity(Velocity* velocity) {
-    velocity->linear_x *= kinematics.linear_factor;
-    velocity->linear_y *= kinematics.linear_factor;
+    velocity->linear_x *= kinematics.linear_x_factor;
+    velocity->linear_y *= kinematics.linear_y_factor;
     velocity->angular_z *= kinematics.angular_factor;
 }
 

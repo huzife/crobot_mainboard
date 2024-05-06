@@ -223,14 +223,14 @@ void DMA1_Stream7_IRQHandler(void) {
   modbus_dma_tx_callback(0);
 }
 
-extern void modbus_t15_timeout_callback(uint16_t id);
+extern void modbus_timer_timeout_callback(uint16_t id);
 
 void TIM1_UP_TIM10_IRQHandler(void) {
-  modbus_t15_timeout_callback(0);
+  modbus_timer_timeout_callback(0);
 }
 
 void TIM1_TRG_COM_TIM11_IRQHandler(void) {
-  modbus_t15_timeout_callback(1);
+  modbus_timer_timeout_callback(1);
 }
 
 /**

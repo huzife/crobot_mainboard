@@ -14,6 +14,7 @@
 #include "los_memory.h"
 #include <stdbool.h>
 
+#define MOTOR_CPR_SCALE 0.1f
 #define HOST_COM_VEL_PRIORITY 5
 #define HOST_COM_VEL_EXPIRY_TIME 100
 
@@ -26,7 +27,7 @@ static Velocity_Message host_com_velocity;
 
 typedef enum {
     SET_PID_INTERVAL,
-    SET_COUNT_PER_REV,
+    SET_MOTOR_PARAM,
     SET_ROBOT_BASE,
     SET_CORRECTION_FACTOR,
     SET_VELOCITY,
@@ -83,41 +84,47 @@ static bool set_pid_interval_func() {
     if (DATA_LEN != 3)
         return false;
 
-    uint16_t val = ((*DATA_START) << 8) | *(DATA_START + 1);
-    modbus_set_holding_reg(0, 1, 0x13, val);
     DATA_LEN = 0;
-
-    return true;
+    uint16_t val = ((*DATA_START) << 8) | *(DATA_START + 1);
+    return modbus_set_holding_reg(0, 1, 0x13, val);
 }
 
-static bool set_count_per_rev_func() {
-    if (DATA_LEN != 3)
+static bool set_motor_param_func() {
+    if (DATA_LEN != 6)
         return false;
 
-    uint16_t val = ((*DATA_START) << 8) | *(DATA_START + 1);
-    modbus_set_holding_reg(0, 1, 0x14, val);
     DATA_LEN = 0;
 
-    return true;
+    uint32_t cpr = 0;
+    for (int i = 0; i < 4; i++) {
+        cpr <<= 8;
+        cpr |= *(DATA_START + i);
+    }
+    cpr *= MOTOR_CPR_SCALE;
+
+    return modbus_set_holding_reg(0, 1, 0x14, cpr) &&
+           modbus_set_holding_reg(0, 1, 0x15, *DATA_START);
 }
 
 static bool set_robot_base_func() {
     Kinematics_Robot_Base type = *(DATA_START);
-    bool ret = kinematics_set_robot_base(type, DATA_START + 1, DATA_LEN - 2);
+    uint32_t size = DATA_LEN - 2;
     DATA_LEN = 0;
 
-    return ret;
+    return kinematics_set_robot_base(type, DATA_START + 1, size);
 }
 
 static bool set_correction_factor_func() {
-    if (DATA_LEN != 9)
+    if (DATA_LEN != 13)
         return false;
 
-    float linear;
+    float linear_x;
+    float linear_y;
     float angular;
-    hex_to_float(DATA_START, &linear);
+    hex_to_float(DATA_START, &linear_x);
+    hex_to_float(DATA_START + 4, &linear_y);
     hex_to_float(DATA_START + 4, &angular);
-    kinematics_set_correction_factor(linear, angular);
+    kinematics_set_correction_factor(linear_x, linear_y, angular);
     DATA_LEN = 0;
 
     return true;
@@ -224,8 +231,8 @@ static void host_com_process() {
             ret = set_pid_interval_func();
             break;
 
-        case SET_COUNT_PER_REV:
-            ret = set_count_per_rev_func();
+        case SET_MOTOR_PARAM:
+            ret = set_motor_param_func();
             break;
 
         case SET_ROBOT_BASE:
@@ -269,13 +276,24 @@ static void host_com_process() {
             break;
     }
 
-    if (ret && DATA_LEN) {
-        LOS_EventRead(&host_com_event,
-                      HOST_COM_TX_DONE,
-                      LOS_WAITMODE_AND | LOS_WAITMODE_CLR,
-                      500);
-        CDC_Transmit_FS(host_com_cb.buf, DATA_LEN + 3);
+    if (!ret) {
+        PRINT_ERR("Failed to handle request, function code: %d\n", MESSAGE_TYPE);
+        return;
     }
+
+    if (!DATA_LEN)
+        return;
+
+    uint32_t val = LOS_EventRead(&host_com_event,
+                                 HOST_COM_TX_DONE,
+                                 LOS_WAITMODE_AND | LOS_WAITMODE_CLR,
+                                 500);
+    if (!val && (val & (1 << 25))) {
+        PRINT_ERR("Host com error\n");
+        return;
+    }
+
+    CDC_Transmit_FS(host_com_cb.buf, DATA_LEN + 3);
 }
 
 bool host_com_init(uint16_t buf_len) {

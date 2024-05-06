@@ -14,7 +14,8 @@ typedef struct {
 typedef enum {
     KINEMATICS_ROBOT_BASE_2WD,
     KINEMATICS_ROBOT_BASE_3WO,
-    KINEMATICS_ROBOT_BASE_4WD
+    KINEMATICS_ROBOT_BASE_4WD,
+    KINEMATICS_ROBOT_BASE_4MEC
 } Kinematics_Robot_Base;
 
 /// @brief Init kinematics mutex
@@ -29,7 +30,7 @@ void kinematics_get_odometry_and_velocity(Odometry* odom, Velocity* vel);
 void kinematics_reset_odometry();
 
 /// @brief Set linear and angular correction factor
-void kinematics_set_correction_factor(float linear, float angular);
+void kinematics_set_correction_factor(float linear_x, float linear_y, float angular);
 
 /// @brief Set target velocity
 /// @param[in] velocity Target velocity

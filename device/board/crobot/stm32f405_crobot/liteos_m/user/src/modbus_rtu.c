@@ -242,10 +242,12 @@ static bool bus_request(uint16_t id, uint16_t write_len,
 
         case BUS_TIMEOUT:
             PRINT_ERR("Bus request timeout, id = %d\n", id);
+            bus[id].status = BUS_READY;
             return false;
 
         case BUS_ERROR:
             PRINT_ERR("Bus error, byte rx interval excceeded T1.5, id = %d\n", id);
+            bus[id].status = BUS_READY;
             return false;
     }
 }
@@ -296,7 +298,7 @@ void modbus_dma_tx_callback(uint16_t id) {
     HAL_DMA_IRQHandler(&bus[id].dma_tx);
 }
 
-void modbus_t15_timeout_callback(uint16_t id) {
+void modbus_timer_timeout_callback(uint16_t id) {
     if (__HAL_TIM_GET_IT_SOURCE(&bus[id].tim, TIM_IT_UPDATE) &&
         __HAL_TIM_GET_FLAG(&bus[id].tim, TIM_FLAG_UPDATE)) {
         __HAL_TIM_CLEAR_FLAG(&bus[id].tim, TIM_FLAG_UPDATE);

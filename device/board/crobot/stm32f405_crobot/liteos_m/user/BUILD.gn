@@ -19,7 +19,8 @@ kernel_module(module_name) {
     sources += [
         "src/kinematics_impl/kinematics_2wd.c",
         "src/kinematics_impl/kinematics_3wo.c",
-        "src/kinematics_impl/kinematics_4wd.c"
+        "src/kinematics_impl/kinematics_4wd.c",
+        "src/kinematics_impl/kinematics_4mec.c"
     ]
 
     include_dirs = [
