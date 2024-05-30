@@ -103,7 +103,7 @@ static bool set_motor_param_func() {
     cpr *= MOTOR_CPR_SCALE;
 
     return modbus_set_holding_reg(0, 1, 0x14, cpr) &&
-           modbus_set_holding_reg(0, 1, 0x15, *DATA_START);
+           modbus_set_holding_reg(0, 1, 0x15, *(DATA_START + 4));
 }
 
 static bool set_robot_base_func() {
