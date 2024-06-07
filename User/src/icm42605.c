@@ -149,13 +149,21 @@ void icm42605_update_data() {
     uint8_t buf[12] = {0};
     read_regs(ICM42605_ACCEL_DATA_X1, buf, 12);
 
+    IMU_Data data;
+    data.accel_x = (int16_t)((buf[0] << 8) | buf[1]) * accel_sensitivity;
+    data.accel_y = (int16_t)((buf[2] << 8) | buf[3]) * accel_sensitivity;
+    data.accel_z = (int16_t)((buf[4] << 8) | buf[5]) * accel_sensitivity;
+    data.angular_x = (int16_t)((buf[6] << 8) | buf[7]) * gyro_sensitivity;
+    data.angular_y = (int16_t)((buf[8] << 8) | buf[9]) * gyro_sensitivity;
+    data.angular_z = (int16_t)((buf[10] << 8) | buf[11]) * gyro_sensitivity;
+
     xSemaphoreTake(imu_data_mtx, 10);
-    imu_data.accel_x = (int16_t)((buf[0] << 8) | buf[1]) * accel_sensitivity;
-    imu_data.accel_y = (int16_t)((buf[2] << 8) | buf[3]) * accel_sensitivity;
-    imu_data.accel_z = (int16_t)((buf[4] << 8) | buf[5]) * accel_sensitivity;
-    imu_data.angular_x = (int16_t)((buf[6] << 8) | buf[7]) * gyro_sensitivity;
-    imu_data.angular_y = (int16_t)((buf[8] << 8) | buf[9]) * gyro_sensitivity;
-    imu_data.angular_z = (int16_t)((buf[10] << 8) | buf[11]) * gyro_sensitivity;
+    imu_data.accel_x = -data.accel_y;
+    imu_data.accel_y = data.accel_x;
+    imu_data.accel_z = data.accel_z;
+    imu_data.angular_x = -data.angular_x;
+    imu_data.angular_y = data.angular_y;
+    imu_data.angular_z = data.angular_z;
     xSemaphoreGive(imu_data_mtx);
 }
 
