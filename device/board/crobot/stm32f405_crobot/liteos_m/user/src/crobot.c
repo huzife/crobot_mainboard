@@ -125,7 +125,11 @@ static void* kinematics_task(uint32_t arg) {
 }
 
 static void* ultrasonic_task(uint32_t arg) {
-    ultrasonic_init();
+    if (!ultrasonic_init()) {
+        PRINT_ERR("Failed to init ultrasonic\n");
+        return NULL;
+    }
+
     while (true) {
         ultrasonic_update_range();
         LOS_TaskDelay(50);
