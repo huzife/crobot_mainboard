@@ -1,6 +1,5 @@
 #include "icm42605.h"
 #include "icm42605_reg.h"
-#include "los_atomic.h"
 #include "los_mux.h"
 #include "los_task.h"
 
@@ -8,6 +7,9 @@
 #include "spi.h"
 #define ICM42605_CS_LOW() HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET)
 #define ICM42605_CS_HIGH() HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET)
+// TODO: init spi
+static SPI_HandleTypeDef icm42605_spi;
+static void icm42605_spi_init() {}
 #elif defined LOSCFG_ICM42605_USE_HARD_I2C
 static I2C_HandleTypeDef icm42605_i2c;
 static void icm42605_i2c_init() {
@@ -166,6 +168,7 @@ static void icm42605_config() {
 
 void icm42605_init() {
 #if defined LOSCFG_ICM42605_USE_HARD_SPI
+    icm42605_spi_init();
 #elif defined LOSCFG_ICM42605_USE_HARD_I2C
     icm42605_i2c_init();
 #endif
@@ -176,28 +179,33 @@ void icm42605_init() {
 void icm42605_update_temperature() {
     uint8_t buf[2] = {0};
     read_regs(ICM42605_TEMP_DATA1, buf, 2);
-    float temperature = (int16_t)((buf[0] << 8) | buf[1]) / 132.48f + 25;
-    LOS_AtomicSet((Atomic*)&imu_temperature, *(int*)&temperature);
+    imu_temperature = (int16_t)((buf[0] << 8) | buf[1]) / 132.48f + 25;
 }
 
 void icm42605_update_data() {
     uint8_t buf[12] = {0};
     read_regs(ICM42605_ACCEL_DATA_X1, buf, 12);
 
+    IMU_Data data;
+    data.accel_x = (int16_t)((buf[0] << 8) | buf[1]) * accel_sensitivity;
+    data.accel_y = (int16_t)((buf[2] << 8) | buf[3]) * accel_sensitivity;
+    data.accel_z = (int16_t)((buf[4] << 8) | buf[5]) * accel_sensitivity;
+    data.angular_x = (int16_t)((buf[6] << 8) | buf[7]) * gyro_sensitivity;
+    data.angular_y = (int16_t)((buf[8] << 8) | buf[9]) * gyro_sensitivity;
+    data.angular_z = (int16_t)((buf[10] << 8) | buf[11]) * gyro_sensitivity;
+
     LOS_MuxPend(imu_data_mtx, 10);
-    imu_data.accel_x = (int16_t)((buf[0] << 8) | buf[1]) * accel_sensitivity;
-    imu_data.accel_y = (int16_t)((buf[2] << 8) | buf[3]) * accel_sensitivity;
-    imu_data.accel_z = (int16_t)((buf[4] << 8) | buf[5]) * accel_sensitivity;
-    imu_data.angular_x = (int16_t)((buf[6] << 8) | buf[7]) * gyro_sensitivity;
-    imu_data.angular_y = (int16_t)((buf[8] << 8) | buf[9]) * gyro_sensitivity;
-    imu_data.angular_z = (int16_t)((buf[10] << 8) | buf[11]) * gyro_sensitivity;
+    imu_data.accel_x = -data.accel_y;
+    imu_data.accel_y = data.accel_x;
+    imu_data.accel_z = data.accel_z;
+    imu_data.angular_x = -data.angular_x;
+    imu_data.angular_y = data.angular_y;
+    imu_data.angular_z = data.angular_z;
     LOS_MuxPost(imu_data_mtx);
 }
 
 float icm42605_get_temperature() {
-    int temperature = LOS_AtomicRead((const Atomic*)&imu_temperature);
-
-    return *(float*)&temperature;
+    return imu_temperature;
 }
 
 IMU_Data icm42605_get_data() {

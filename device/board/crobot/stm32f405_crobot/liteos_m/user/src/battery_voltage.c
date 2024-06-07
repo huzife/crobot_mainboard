@@ -1,5 +1,5 @@
 #include "battery_voltage.h"
-#include "los_atomic.h"
+#include "stm32f4xx_hal.h"
 #include <stdbool.h>
 
 #define BATTERY_VOLTAGE_WINDOW_SIZE 8
@@ -52,9 +52,7 @@ void battery_voltage_init() {
 }
 
 float battery_get_voltage() {
-    int voltage = LOS_AtomicRead((const Atomic*)&battery_voltage);
-
-    return *(float*)&voltage;
+    return battery_voltage;
 }
 
 static void battery_voltage_rolling_mean(uint32_t value) {
@@ -74,8 +72,7 @@ static void battery_voltage_rolling_mean(uint32_t value) {
     uint32_t size = is_window_full ? BATTERY_VOLTAGE_WINDOW_SIZE
                                    : adc_value_index;
     float adc_value = (float)adc_value_sum / size;
-    float voltage = adc_value * 3.3f * (133.0f / 33.0f) / ((1 << 12) - 1);
-    LOS_AtomicSet((Atomic*)&battery_voltage, *(int*)&voltage);
+    battery_voltage = adc_value * 3.3f * (133.0f / 33.0f) / ((1 << 12) - 1);
 }
 
 void battery_voltage_update() {

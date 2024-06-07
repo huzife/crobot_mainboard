@@ -22,6 +22,7 @@
 #include "target_config.h"
 
 void SystemClock_Config(void);
+extern void dprintf_init();
 extern void crobot_start();
 
 /**
@@ -33,10 +34,7 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
   MX_GPIO_Init();
-#if (LOSCFG_KERNEL_PRINTF == 1)
-  extern void kernel_printf_init();
-  kernel_printf_init();
-#endif
+  dprintf_init();
 
   crobot_start();
 

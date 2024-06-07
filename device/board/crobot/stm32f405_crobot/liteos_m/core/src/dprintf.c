@@ -919,7 +919,7 @@ int fctprintf(void (*out)(char character, void* arg), void* arg, const char* for
 
 static UART_HandleTypeDef debug_uart;
 
-void kernel_printf_init() {
+void dprintf_init() {
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     __HAL_RCC_USART1_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();

@@ -1,19 +1,17 @@
 #include "ultrasonic.h"
 #include "modbus_rtu.h"
-#include "los_atomic.h"
 
-static uint32_t ultrasonic_range;
+static uint16_t ultrasonic_range;
 
-void ultrasonic_init() {
+bool ultrasonic_init() {
     ultrasonic_range = 0xFFFF;
+    return modbus_get_input_regs(1, 1, 0, 1, &ultrasonic_range);
 }
 
 void ultrasonic_update_range() {
-    uint16_t range;
-    modbus_get_input_regs(1, 1, 0, 1, &range);
-    LOS_AtomicSet((Atomic*)&ultrasonic_range, range);
+    modbus_get_input_regs(1, 1, 0, 1, &ultrasonic_range);
 }
 
-uint32_t ultrasonic_get_range() {
-    return LOS_AtomicRead((const Atomic*)&ultrasonic_range);
+uint16_t ultrasonic_get_range() {
+    return ultrasonic_range;
 }
