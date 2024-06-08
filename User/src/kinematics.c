@@ -11,7 +11,6 @@
 #include <math.h>
 #include <string.h>
 
-#define CCONFIG_RESOLUTION 0.1f
 #define WHEEL_SPEED_SCALE 1000.0f
 #define KINEMATICS_WINDOW_SIZE 4
 const float PI = M_PI;
@@ -83,8 +82,8 @@ static void kinematics_robot_base_init() {
     kinematics.inverse_func = kinematics_inverse_2wd;
     kinematics.forward_func = kinematics_forward_2wd;
     Kinematics_2WD_Param param;
-    param.radius = CROBOT_BASE_2WD_RADIUS * CCONFIG_RESOLUTION;
-    param.separation = CROBOT_BASE_2WD_SEPARATION * CCONFIG_RESOLUTION;
+    param.radius = CROBOT_BASE_2WD_RADIUS;
+    param.separation = CROBOT_BASE_2WD_SEPARATION;
     kinematics_set_param_2wd(param);
 #elif defined CROBOT_BASE_3WO
     kinematics.wheel_num = 3;
@@ -92,8 +91,8 @@ static void kinematics_robot_base_init() {
     kinematics.inverse_func = kinematics_inverse_3wo;
     kinematics.forward_func = kinematics_forward_3wo;
     Kinematics_3WO_Param param;
-    param.radius = CROBOT_BASE_3WO_RADIUS * CCONFIG_RESOLUTION;
-    param.distance = CROBOT_BASE_3WO_DISTANCE * CCONFIG_RESOLUTION;
+    param.radius = CROBOT_BASE_3WO_RADIUS;
+    param.distance = CROBOT_BASE_3WO_DISTANCE;
     kinematics_set_param_3wo(param);
 #elif defined CROBOT_BASE_4WD
     kinematics.wheel_num = 4;
@@ -101,8 +100,8 @@ static void kinematics_robot_base_init() {
     kinematics.inverse_func = kinematics_inverse_4wd;
     kinematics.forward_func = kinematics_forward_4wd;
     Kinematics_4WD_Param param;
-    param.radius = CROBOT_BASE_4WD_RADIUS * CCONFIG_RESOLUTION;
-    param.separation = CROBOT_BASE_4WD_SEPARATION * CCONFIG_RESOLUTION;
+    param.radius = CROBOT_BASE_4WD_RADIUS;
+    param.separation = CROBOT_BASE_4WD_SEPARATION;
     kinematics_set_param_4wd(param);
 #elif defined CROBOT_BASE_4MEC
     kinematics.wheel_num = 4;
@@ -110,9 +109,9 @@ static void kinematics_robot_base_init() {
     kinematics.inverse_func = kinematics_inverse_4mec;
     kinematics.forward_func = kinematics_forward_4mec;
     Kinematics_4MEC_Param param;
-    param.radius = CROBOT_BASE_4MEC_RADIUS * CCONFIG_RESOLUTION;
-    param.distance_x = CROBOT_BASE_4MEC_DISTANCE_X * CCONFIG_RESOLUTION;
-    param.distance_y = CROBOT_BASE_4MEC_DISTANCE_Y * CCONFIG_RESOLUTION;
+    param.radius = CROBOT_BASE_4MEC_RADIUS;
+    param.distance_x = CROBOT_BASE_4MEC_DISTANCE_X;
+    param.distance_y = CROBOT_BASE_4MEC_DISTANCE_Y;
     kinematics_set_param_4mec(param);
 #endif
     kinematics.state = KINEMATICS_READY;
