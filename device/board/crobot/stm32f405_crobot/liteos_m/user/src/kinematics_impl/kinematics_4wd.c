@@ -32,12 +32,13 @@ void kinematics_inverse_4wd(Velocity velocity, float speeds[]) {
     float angular = velocity.angular_z;
 
     // rotate speed of each wheel, rad/s
-    float speed_left = (angular * separation / 2 - linear) / radius;
-    float speed_right = (angular * separation / 2 + linear) / radius;
+    float v = angular * separation / 2;
+    float speed_left = (linear - v) / radius;
+    float speed_right = (linear + v) / radius;
 
-    speeds[0] = speed_left;
+    speeds[0] = -speed_left;
     speeds[1] = speed_right;
-    speeds[2] = speed_left;
+    speeds[2] = -speed_left;
     speeds[3] = speed_right;
 }
 
@@ -46,11 +47,11 @@ void kinematics_forward_4wd(float speeds[], Velocity* velocity) {
     float separation = kinematics_param.separation;
 
     // rotate speed
-    float speed_left = (speeds[0] + speeds[2]) / 2;
+    float speed_left = -(speeds[0] + speeds[2]) / 2;
     float speed_right = (speeds[1] + speeds[3]) / 2;
 
     // linear and angular
-    velocity->linear_x = (radius * (speed_right - speed_left)) / 2;
+    velocity->linear_x = (radius * (speed_right + speed_left)) / 2;
     velocity->linear_y = 0.0f;
-    velocity->angular_z = (radius * (speed_right + speed_left)) / separation;
+    velocity->angular_z = (radius * (speed_right - speed_left)) / separation;
 }

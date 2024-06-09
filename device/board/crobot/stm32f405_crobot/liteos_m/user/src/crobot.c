@@ -203,7 +203,7 @@ void crobot_start() {
     create_task(&bumper_task_id, bumper_task, "bumper_task", 6, 0x1000);
     create_task(&controller_task_id, controller_task, "controller_task", 6, 0x1000);
     create_task(&kinematics_task_id, kinematics_task, "kinematics_task", 6, 0x1000);
-    // create_task(&ultrasonic_task_id, ultrasonic_task, "ultrasonic_task", 6, 0x1000);
+    create_task(&ultrasonic_task_id, ultrasonic_task, "ultrasonic_task", 6, 0x1000);
     create_task(&imu_task_id, imu_task, "imu_task", 6, 0x1000);
     create_task(&battery_voltage_task_id, battery_voltage_task, "battery_voltage_task", 6, 0x1000);
     LOS_TaskUnlock();

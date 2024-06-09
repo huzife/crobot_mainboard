@@ -12,7 +12,7 @@
 #include <math.h>
 #include <string.h>
 
-#define LOSCFG_CONFIG_RESOLUTION 0.1f
+#define LOSCFG_CONFIG_RESOLUTION 0.0001f
 #define WHEEL_SPEED_SCALE 1000.0f
 #define KINEMATICS_WINDOW_SIZE 4
 const float PI = M_PI;

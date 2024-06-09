@@ -26,13 +26,14 @@ void kinematics_inverse_4mec(Velocity velocity, float speeds[]) {
     float angular = velocity.angular_z;
 
     // rotate speed of each wheel, rad/s
-    float speed_fl = (angular * d - vx + vy) / radius;
-    float speed_fr = (angular * d + vx + vy) / radius;
-    float speed_bl = (angular * d - vx - vy) / radius;
-    float speed_br = (angular * d + vx - vy) / radius;
-    speeds[0] = speed_fl;
+    float v = angular * d;
+    float speed_fl = (vx - vy - v) / radius;
+    float speed_fr = (vx + vy + v) / radius;
+    float speed_bl = (vx + vy - v) / radius;
+    float speed_br = (vx - vy + v) / radius;
+    speeds[0] = -speed_fl;
     speeds[1] = speed_fr;
-    speeds[2] = speed_bl;
+    speeds[2] = -speed_bl;
     speeds[3] = speed_br;
 }
 
@@ -41,9 +42,9 @@ void kinematics_forward_4mec(float speeds[], Velocity* velocity) {
     float d = kinematics_param.distance_x + kinematics_param.distance_y;
 
     // rotate speed
-    float speed_fl = speeds[0];
+    float speed_fl = -speeds[0];
     float speed_fr = speeds[1];
-    float speed_bl = speeds[2];
+    float speed_bl = -speeds[2];
     float speed_br = speeds[3];
 
     // linear and angular
