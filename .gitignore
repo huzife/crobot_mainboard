@@ -16,3 +16,4 @@
 
 !.clangd
 !.gitignore
+!host_com_protocol.md
